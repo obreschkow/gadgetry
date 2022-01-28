@@ -8,7 +8,7 @@
 #' @param m optional list of N-vectors with particle masses
 #' @param types optional vector of particle indices. The number of elements in this vector must be the same as the number of matrices in the list \code{x}.
 #'
-#' @return Returns an object of class \code{gadget}, which is a structured list that closely resembles the HDF5 format of Gadget (see \url{https://wwwmpa.mpa-garching.mpg.de/gadget4}).
+#' @return Returns an object of class \code{gadget}, which is a structured list that closely resembles the HDF5 format of Gadget (see \url{https://wwwmpa.mpa-garching.mpg.de/gadget4/}).
 #'
 #' @author Danail Obreschkow
 #'

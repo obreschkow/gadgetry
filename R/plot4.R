@@ -1,6 +1,6 @@
 #' Display a simulation snapshot in four different projections
 #'
-#' @importFrom cooltools nplot runif3 rotation3
+#' @importFrom cooltools runif3 rotation3
 #' @importFrom grDevices pdf dev.off graphics.off
 #' @importFrom graphics lines par text
 #'

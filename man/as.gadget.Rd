@@ -18,7 +18,7 @@ as.gadget(x, v = NULL, m = NULL, id = NULL, types = NULL)
 \item{types}{optional vector of particle indices. The number of elements in this vector must be the same as the number of matrices in the list \code{x}.}
 }
 \value{
-Returns an object of class \code{gadget}, which is a structured list that closely resembles the HDF5 format of Gadget (see \url{https://wwwmpa.mpa-garching.mpg.de/gadget4}).
+Returns an object of class \code{gadget}, which is a structured list that closely resembles the HDF5 format of Gadget (see \url{https://wwwmpa.mpa-garching.mpg.de/gadget4/}).
 }
 \description{
 Converts raw particle data into a \code{gadget} object.

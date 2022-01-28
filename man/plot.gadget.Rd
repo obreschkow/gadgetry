@@ -45,11 +45,11 @@
 }
 \arguments{
 \item{x}{Gadget data type, which must contain at least one sublist PartType# (with #=0,1,...). Each sublist PartType# represents one type of particle (e.g. gas, stars, dark matter) and must contain at least the particles coordinates in an N-by-3 matrix \code{Coordinates}. Other optional elements of PartType# are:\cr
-\code{col} = color used to display this particle type. This can be a single color or a vector of colors. If a single color is provided, a range of different brightnesses is produced automatically following the \code{color.model}. If a vector is provided, it is interpreted as a color scale applied to the particles.\cr
+\code{col} = color used to display this particle type. This can be a single color or a vector of colors. If a single color is provided, a range of brightness is produced automatically following the \code{color.model}. If a vector is provided, it is interpreted as a color scale applied to the particles.\cr
 \code{color.model} = character string that must be either \code{hsv} or \code{hsl}. In the former case, the color \code{col} is expanded into a color scale ranging from black to that particular color. In the latter case, the color scale ranges from black to white passing through the color \code{col}.\cr
 \code{value} = optional N-vector of values, one for each particle, which define the position on the color scale. If not given, particles are colored according to their projected density.\cr
 \code{valrange} = optional 2-vector specifying the values corresponding to the limits of the color scale. Only used if the N-vector \code{value} is given.\cr
-\code{density.scaling} = logical flag (default FALSE), specifying whether the brightness is scaled with the particle density. Normally only set to TRUE if a property other than the density is shown.\cr
+\code{density.scaling} = logical flag (default TRUE), specifying whether the brightness is scaled with the particle density if \code{value} is given.\cr
 \code{lum} = overall scaling factor for the color scale.\cr
 \code{hdr} = parameter specifying the size of the dynamic range to be represented by the color scale. The larger the value, the higher the dynamic range.\cr
 \code{kde} = logical flag (default TRUE), whether the particles are smoothed using an adaptive kernel density estimator.\cr
@@ -126,18 +126,28 @@
 \item{...}{additional parameters for \code{\link[graphics]{plot}}}
 }
 \value{
-Returns a list of items
-\item{rgb}{ngrid-by-ngrid-by-3 array of containig the rgb colour data between 0 and 1}
-\item{radius}{positive real number specifying the radius of the image along the horizontal and vertical axes, in the units of the particle positions}
-\item{rotationmatrix}{rotation matrix applied to the input data, i.e. the projection was x = (x\%*\%rot)[,1:2]}
+Returns a structured list of parameters and arrays useful to analyse and reproduce the figure
 }
 \description{
 Produces a raster image visualizing particle positions in 3D N-body/SPH data.
 }
 \examples{
-# Example of 2x1e4 particles
+## Example of 2x1e4 particles
+
+# Produce a density plot with different colors for the two particle species
 dat = as.gadget(list(cooltools::runif3(1e4), array(rnorm(3e4),c(1e4,3))))
+graphics::par(mar=c(1,1,1,1))
 plot(dat, width=5)
+
+# Only plot particles of species "1" and vary hue with distance from centre
+xyradius = as.vector(cooltools::vectornorm(dat$PartType1$Coordinates[,1:2]))
+dat$PartType1$value = xyradius
+dat$PartType1$valrange = c(0,2)
+graphics::par(mar=c(1,1,1,6))
+out = plot(dat, width=5, types=1)
+cooltools::colorbar(2.7,-2.5,3,2.5,
+                    col=out$PartType1$col,clim=out$PartType1$valrange,
+                    text='xy-distance from center')
 
 }
 \author{

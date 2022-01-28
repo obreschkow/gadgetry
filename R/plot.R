@@ -1,23 +1,22 @@
 #' Visualise one or several 3D point sets
 #'
-#' @importFrom cooltools nplot rasterflip lim griddata2 kde2 quadrupole rotation3 vectornorm
+#' @importFrom cooltools nplot rasterflip lim griddata2 kde2 quadrupole rotation3 vectornorm lightness
 #' @importFrom png writePNG
-#' @importFrom EBImage gblur
 #' @importFrom grDevices pdf dev.off col2rgb rainbow
 #' @importFrom graphics axis lines par rasterImage rect text arrows
 #'
 #' @description Produces a raster image visualizing particle positions in 3D N-body/SPH data.
 #'
 #' @param x Gadget data type, which must contain at least one sublist PartType# (with #=0,1,...). Each sublist PartType# represents one type of particle (e.g. gas, stars, dark matter) and must contain at least the particles coordinates in an N-by-3 matrix \code{Coordinates}. Other optional elements of PartType# are:\cr
-#' \code{col} = color used to display this particle type. This can be a single color or a vector of colors. If a single color is provided, a range of different brightnesses is produced automatically following the \code{color.model}. If a vector is provided, it is interpreted as a color scale applied to the particles.\cr
+#' \code{col} = color used to display this particle type. This can be a single color or a vector of colors. If a single color is provided, a range of brightness is produced automatically following the \code{color.model}. If a vector is provided, it is interpreted as a color scale applied to the particles.\cr
 #' \code{color.model} = character string that must be either \code{hsv} or \code{hsl}. In the former case, the color \code{col} is expanded into a color scale ranging from black to that particular color. In the latter case, the color scale ranges from black to white passing through the color \code{col}.\cr
 #' \code{value} = optional N-vector of values, one for each particle, which define the position on the color scale. If not given, particles are colored according to their projected density.\cr
 #' \code{valrange} = optional 2-vector specifying the values corresponding to the limits of the color scale. Only used if the N-vector \code{value} is given.\cr
-#' \code{density.scaling} = logical flag (default FALSE), specifying whether the brightness is scaled with the particle density. Normally only set to TRUE if a property other than the density is shown.\cr
+#' \code{density.scaling} = logical flag (default TRUE), specifying whether the brightness is scaled with the particle density if \code{value} is given.\cr
 #' \code{lum} = overall scaling factor for the color scale.\cr
 #' \code{hdr} = parameter specifying the size of the dynamic range to be represented by the color scale. The larger the value, the higher the dynamic range.\cr
 #' \code{kde} = logical flag (default TRUE), whether the particles are smoothed using an adaptive kernel density estimator.\cr
-#' \code{smoothing} = smoothing scale in simulation units. If not given, a value is picked automatically.\cr\cr
+#' \code{smoothing} = smoothing scale in simulation units. If not given, a value is set automatically to one percent of the geometric mean of width and height.\cr\cr
 #' @param types vector specifying the particle types to be displayed. These numbers must correspond to the # in the sublists PartType#. If not given, all particle species are shown.
 #' @param combine.fun function used to combined the image layers corresponding to different particle species. Typically, this is set to \code{sum} or \code{mean}.
 #' @param center optional 3-vector specifying the coordinate at the center of the plot. The default is the geometric center (= center of mass, if all particle masses are equal).
@@ -54,17 +53,27 @@
 #' @param text.col color of text, arrows and scale
 #' @param ... additional parameters for \code{\link[graphics]{plot}}
 #'
-#' @return Returns a list of items
-#' \item{rgb}{ngrid-by-ngrid-by-3 array of containig the rgb colour data between 0 and 1}
-#' \item{radius}{positive real number specifying the radius of the image along the horizontal and vertical axes, in the units of the particle positions}
-#' \item{rotationmatrix}{rotation matrix applied to the input data, i.e. the projection was x = (x\%*\%rot)[,1:2]}
+#' @return Returns a structured list of parameters and arrays useful to analyse and reproduce the figure
 #'
 #' @author Danail Obreschkow
 #'
 #' @examples
-#' # Example of 2x1e4 particles
+#' ## Example of 2x1e4 particles
+#'
+#' # Produce a density plot with different colors for the two particle species
 #' dat = as.gadget(list(cooltools::runif3(1e4), array(rnorm(3e4),c(1e4,3))))
+#' graphics::par(mar=c(1,1,1,1))
 #' plot(dat, width=5)
+#'
+#' # Only plot particles of species "1" and vary hue with distance from centre
+#' xyradius = as.vector(cooltools::vectornorm(dat$PartType1$Coordinates[,1:2]))
+#' dat$PartType1$value = xyradius
+#' dat$PartType1$valrange = c(0,2)
+#' graphics::par(mar=c(1,1,1,6))
+#' out = plot(dat, width=5, types=1)
+#' cooltools::colorbar(2.7,-2.5,3,2.5,
+#'                     col=out$PartType1$col,clim=out$PartType1$valrange,
+#'                     text='xy-distance from center')
 #'
 #' @method plot gadget
 #' @export
@@ -77,27 +86,16 @@ plot.gadget = function(x, center=NULL, rotation=1, thickness=NULL, width=NULL, a
 
   dat = x; x = NULL
 
-  # if header not given, make it automatically
-  if (is.null(dat$Header)) {
-    dat$Header$NumPart_ThisFile = rep(0,6)
-    for (type in seq(0,5)) {
-      field = sprintf('PartType%d',type)
-      if (!is.null(dat[[field]])) dat$Header$NumPart_ThisFile[type+1] = dim(dat[[field]]$Coordinates)[1]
-    }
-  }
+  out = list()
 
   # determine particle types to be considered
   if (is.null(types)) {
-    types = seq(0,by=1,length(dat$Header$NumPart_ThisFile)-1)
-  }
-  for (i in seq_along(types)) {
-    if ((types[i]+1) > length(dat$Header$NumPart_ThisFile)) {
-      types[i] = NA
-    } else {
-      if (dat$Header$NumPart_ThisFile[types[i]+1]==0) types[i]=NA
+    types = c()
+    for (type in seq(0,20)) {
+      field = sprintf('PartType%d',type)
+      if (!is.null(dat[[field]])) types=c(types,type)
     }
   }
-  types = types[!is.na(types)]
 
   # check and pre-process input arguments ######################################
   if (min(types)<0) stop('particle types must be non-negative integers')
@@ -105,6 +103,7 @@ plot.gadget = function(x, center=NULL, rotation=1, thickness=NULL, width=NULL, a
   for (type in types) {
 
     field = sprintf('PartType%d',type)
+    out[[field]] = list()
 
     # handle brightness parameters
     if (is.null(dat[[field]]$lum)) dat[[field]]$lum=lum
@@ -114,7 +113,10 @@ plot.gadget = function(x, center=NULL, rotation=1, thickness=NULL, width=NULL, a
     dat[[field]]$color.by.property = !is.null(dat[[field]]$value)
     if (dat[[field]]$color.by.property) {
       if (is.null(dat[[field]]$valrange)) dat[[field]]$valrange=range(dat[[field]]$value)
+    } else {
+      dat[[field]]$valrange = c(0,1)
     }
+    out[[field]]$valrange = dat[[field]]$valrange
 
     # color model
     if (is.null(dat[[field]]$color.model)) {
@@ -143,7 +145,8 @@ plot.gadget = function(x, center=NULL, rotation=1, thickness=NULL, width=NULL, a
         dat[[field]]$col = cooltools::lightness(dat[[field]]$col,seq(0,1,length=1000))
       }
     }
-    dat[[field]]$col = cbind(grDevices::col2rgb(dat[[field]]$col)/255,c(0,0,0))
+    out[[field]]$col = dat[[field]]$col
+    dat[[field]]$colrgb = cbind(grDevices::col2rgb(dat[[field]]$col)/255,c(0,0,0))
 
   }
   # end input handling #########################################################
@@ -221,124 +224,128 @@ plot.gadget = function(x, center=NULL, rotation=1, thickness=NULL, width=NULL, a
   ny = round(ngrid*height/mean.length)
   if (max(nx,ny)>8000) stop('Not more than 8000 pixels allowed on each side.')
   dx = width/nx # pixel size in simulation length units
-  nlayers = sum(dat$Header$NumPart_ThisFile[types+1]>0)
-  img = array(0,c(nlayers,nx,ny,3))
-  layer = 0
 
-  # determine smoothing
-  if (is.null(smoothing)) {
-    smoothing = sqrt(nx*ny)*0.007
-  } else {
-    smoothing = smoothing/dx # [pixels]
-  }
+  # determine default smoothing
+  if (is.null(smoothing)) smoothing = mean.length*0.01 # [length units of sim]
 
-  # put particles on grid
+  # put particles on a grid
   for (type in types) {
 
+    field = sprintf('PartType%d',type)
+
+    # specify smoothing kernel
+    if (is.null(dat[[field]]$smoothing)) dat[[field]]$smoothing = smoothing
+    if (is.null(dat[[field]]$kde)) {
+      kde = kde
+    } else {
+      kde = dat[[field]]$kde
+    }
+    out[[field]]$smoothing = dat[[field]]$smoothing
+    out[[field]]$kde = dat[[field]]$kde
+
+    # get positions
+    x = dat[[field]]$Coordinates
+
+    # compute total number of particles
+    out[[field]]$n.tot = dim(x)[1]
+
+    # translate particles to custom center
+    x = sweep(x, 2, center)
+
+    # rotate coordinates (active rotation)
+    x = t(rot%*%t(x))
+
+    # default selection
+    sel = seq(dim(x)[1])
+
+    # sub-select slice thickness
+    if (!is.null(thickness)) {
+      sel = sel[abs(x[,3])<=thickness/2]
+    }
+
+    # subsampling
+    if (!is.null(sample.fraction)) {
+      if (sample.fraction<1) {
+        nsub = max(1,round(length(sel)*sample.fraction)) # number of particles to select
+        sel = sample(sel,nsub)
+      }
+    }
+
+    #  raster particle data
+    if (dat[[field]]$smoothing==0) {
+      g = cooltools::griddata2(x[sel,1], x[sel,2], w=as.vector(dat[[field]]$value[sel]), xlim=xlim, ylim=ylim, n=c(nx,ny))
+      out[[field]]$density = g$n
+      if (dat[[field]]$color.by.property) out[[field]]$value = g$m/out[[field]]$density
+    } else {
+      if (kde) {
+        g = cooltools::kde2(x[sel,1], x[sel,2], xlim=xlim, ylim=ylim, n=c(nx,ny), s=dat[[field]]$smoothing/8/dx, sd.max=dat[[field]]$smoothing*2/dx, cpp=TRUE)
+        out[[field]]$density = g$d
+        if (dat[[field]]$color.by.property) {
+          g = cooltools::kde2(x[sel,1], x[sel,2], w=as.vector(dat[[field]]$value[sel]), xlim=xlim, ylim=ylim, n=c(nx,ny), s=dat[[field]]$smoothing/8/dx, sd.max=dat[[field]]$smoothing*2/dx, cpp=TRUE)
+          out[[field]]$value = g$d/out[[field]]$density
+        }
+      } else {
+        q = dim(x)[1]
+        g = cooltools::griddata2(x[sel,1], x[sel,2], w=as.vector(dat[[field]]$value[sel]), xlim=xlim, ylim=ylim, n=c(nx,ny))
+        if (requireNamespace("EBImage", quietly=TRUE)) {
+          out[[field]]$density = EBImage::gblur(g$n, dat[[field]]$smoothing/dx)
+          if (dat[[field]]$color.by.property) out[[field]]$value = EBImage::gblur(g$m, dat[[field]]$smoothing/dx)/out[[field]]$density
+        } else {
+          stop('Package EBImage is needed in function plot.gadget if kde=FALSE. Consider using kde=TRUE.')
+        }
+      }
+    }
+    out[[field]]$n.eff = sum(out[[field]]$density)
+  }
+
+  # turn density and value matrices into RGB layers
+  nlayers = sum(dat$Header$NumPart_ThisFile[types+1]>0)
+  img = array(0,c(nx,ny,3,nlayers))
+  layer = 0
+
+  for (type in types) {
     if (dat$Header$NumPart_ThisFile[type+1]>0) {
 
       field = sprintf('PartType%d',type)
+      layer = layer+1
 
-      # specify smoothing kernel
-      if (is.null(dat[[field]]$kde)) {
-        kde = kde
-      } else {
-        kde = dat[[field]]$kde
-      }
-      if (is.null(dat[[field]]$smoothing)) {
-        smoothing = smoothing
-      } else {
-        smoothing = dat[[field]]$smoothing
-      }
-
-      # get positions
-      x = dat[[field]]$Coordinates
-
-      # compute total number of particles
-      n.tot = dim(x)[1]
-
-      # translate particles to custom center
-      x = sweep(x, 2, center)
-
-      # rotate coordinates (active rotation)
-      x = t(rot%*%t(x))
-
-      # default selection
-      sel = seq(dim(x)[1])
-
-      # sub-select slice thickness
-      if (!is.null(thickness)) {
-        sel = sel[abs(x[,3])<=thickness/2]
-      }
-
-      # subsampling
-      if (!is.null(sample.fraction)) {
-        if (sample.fraction<1) {
-          nsub = max(1,round(length(sel)*sample.fraction)) # number of particles to select
-          sel = sample(sel,nsub)
-        }
-      }
-
-      #  raster particle data
-      if (smoothing==0) {
-        g = cooltools::griddata2(x[sel,1], x[sel,2], w=as.vector(dat[[field]]$value[sel]), xlim=xlim, ylim=ylim, n=c(nx,ny))
-        density = g$n
-        if (dat[[field]]$color.by.property) value = g$m/density
-      } else {
-        if (kde) {
-          g = cooltools::kde2(x[sel,1], x[sel,2], xlim=xlim, ylim=ylim, n=c(nx,ny), s=smoothing/8, sd.max=smoothing*2, cpp=TRUE)
-          density = g$d
-          if (dat[[field]]$color.by.property) {
-            g = cooltools::kde2(x[sel,1], x[sel,2], w=as.vector(dat[[field]]$value[sel]), xlim=xlim, ylim=ylim, n=c(nx,ny), s=smoothing/8, sd.max=smoothing*2, cpp=TRUE)
-            value = g$d/density
-          }
-        } else {
-          q = dim(x)[1]
-          g = cooltools::griddata2(x[sel,1], x[sel,2], w=as.vector(dat[[field]]$value[sel]), xlim=xlim, ylim=ylim, n=c(nx,ny))
-          density = EBImage::gblur(g$n, smoothing)
-          if (dat[[field]]$color.by.property) value = EBImage::gblur(g$m, smoothing)/density
-        }
-      }
-
-      # compute number of particles
-      n.eff = sum(density) # selected number of particles with field of view
-
-      # linearly rescale the density field as a function of grid cells, particle numbers and custom 'lum' parameter
-      scaling = (0.5*dat[[field]]$lum)*ngrid^2/max(1,ifelse(fix.luminosity,n.tot,n.eff)) # linear luminosity scaling factor
-      density = scaling*density
-
-      # remap density field from the domain [0,infinity) to [0,1] using a generalised Sigmoid function
+      # convert density to brightness
+      # 1) linearly rescale the density field as a function of grid cells, particle numbers and custom 'lum' parameter
+      scaling = (0.5*dat[[field]]$lum)*ngrid^2/max(1,ifelse(fix.luminosity,out[[field]]$n.tot,out[[field]]$n.eff)) # linear luminosity scaling factor
+      brightness = scaling*out[[field]]$density
+      # 2) remap density field from the domain [0,infinity) to [0,1] using a generalised Sigmoid function
       sigmoid = function(x,a=1) {
         f = 1 # value of x where sigmoid(x)=x/2
         b = ((2/(2-f))^a-1)/(a*f)
         1-1/(x*a*b+1)^(1/a)
       }
-      density = sigmoid(density,dat[[field]]$hdr)
-
-      # ensure that the density field is strictly contained in [0,1], by cropping minute outlines caused by floating-point errors
-      density = cooltools::lim(density)
+      brightness = sigmoid(brightness,dat[[field]]$hdr)
+      # 3) ensure that the density field is strictly contained in [0,1], by cropping minute outlines caused by floating-point errors
+      brightness = cooltools::lim(brightness)
 
       # if no values provided use density as values
-      if (!dat[[field]]$color.by.property) {
-        value = density
-        dat[[field]]$valrange = c(0,1)
+      if (dat[[field]]$color.by.property) {
+        val = out[[field]]$value
+      } else {
+        val = brightness
       }
 
       # turn value into color
-      layer = layer+1
-      nvalcol = dim(dat[[field]]$col)[2]-1
+      nvalcol = dim(dat[[field]]$colrgb)[2]-1
       for (k in seq(3)) {
-        index = round(pmax(0,pmin(1,(as.vector(value)-dat[[field]]$valrange[1])/diff(dat[[field]]$valrange)))*(nvalcol-1)+1)
+        index = round(pmax(0,pmin(1,(as.vector(val)-dat[[field]]$valrange[1])/diff(dat[[field]]$valrange)))*(nvalcol-1)+1)
         index[is.na(index)] = nvalcol+1
-        img[layer,,,k] = dat[[field]]$col[k,index]
+        img[,,k,layer] = dat[[field]]$colrgb[k,index]
       }
 
-      # optionally adjust brightness as a function of density
-      density.scaling = FALSE
-      if (!is.null(dat[[field]]$density.scaling)) density.scaling=dat[[field]]$density.scaling
-      if (density.scaling) {
-        for (k in seq(3)) {
-          img[layer,,,k] = img[layer,,,k]*density
+      # adjust brightness as a function of density if hue represents a property
+      if (dat[[field]]$color.by.property) {
+        density.scaling = TRUE
+        if (!is.null(dat[[field]]$density.scaling)) density.scaling=dat[[field]]$density.scaling
+        if (density.scaling) {
+          for (k in seq(3)) {
+            img[,,k,layer] = img[,,k,layer]*brightness
+          }
         }
       }
 
@@ -347,7 +354,7 @@ plot.gadget = function(x, center=NULL, rotation=1, thickness=NULL, width=NULL, a
 
   # combine layers
   if (layer!=nlayers) stop('wrong number of layers')
-  img = cooltools::lim(apply(img,2:4,combine.fun))
+  img = cooltools::lim(apply(img,1:3,combine.fun))
 
   # save raster image as png
   if (!is.null(pngfile)) {
@@ -404,6 +411,8 @@ plot.gadget = function(x, center=NULL, rotation=1, thickness=NULL, width=NULL, a
   }
 
   # return results
-  invisible(list(rgb = img, xlim = xlim, ylim = ylim, center=center, rotationmatrix = rot))
+  out$rgb = img
+  out$header = list(xlim=xlim, ylim=ylim, center=center, rotationmatrix = rot)
+  invisible(out)
 
 }
