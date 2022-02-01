@@ -53,7 +53,7 @@
 \code{lum} = overall scaling factor for the color scale.\cr
 \code{hdr} = parameter specifying the size of the dynamic range to be represented by the color scale. The larger the value, the higher the dynamic range.\cr
 \code{kde} = logical flag (default TRUE), whether the particles are smoothed using an adaptive kernel density estimator.\cr
-\code{smoothing} = smoothing scale in simulation units. If not given, a value is picked automatically.\cr\cr}
+\code{smoothing} = smoothing scale in simulation units. If not given, a value is set automatically to one percent of the geometric mean of width and height.\cr\cr}
 
 \item{center}{optional 3-vector specifying the coordinate at the center of the plot. The default is the geometric center (= center of mass, if all particle masses are equal).}
 
@@ -135,17 +135,17 @@ Produces a raster image visualizing particle positions in 3D N-body/SPH data.
 ## Example of 2x1e4 particles
 
 # Produce a density plot with different colors for the two particle species
-dat = as.gadget(list(cooltools::runif3(1e4), array(rnorm(3e4),c(1e4,3))))
+dat = as.gadget(list(domath::runif3(1e4), array(rnorm(3e4),c(1e4,3))))
 graphics::par(mar=c(1,1,1,1))
 plot(dat, width=5)
 
 # Only plot particles of species "1" and vary hue with distance from centre
-xyradius = as.vector(cooltools::vectornorm(dat$PartType1$Coordinates[,1:2]))
+xyradius = as.vector(domath::vectornorm(dat$PartType1$Coordinates[,1:2]))
 dat$PartType1$value = xyradius
 dat$PartType1$valrange = c(0,2)
 graphics::par(mar=c(1,1,1,6))
 out = plot(dat, width=5, types=1)
-cooltools::colorbar(2.7,-2.5,3,2.5,
+doplot::colorbar(2.7,-2.5,3,2.5,
                     col=out$PartType1$col,clim=out$PartType1$valrange,
                     text='xy-distance from center')
 

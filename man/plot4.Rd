@@ -32,6 +32,9 @@ plot4(
 
 \item{...}{additional parameters for \code{\link{plot.gadget}}.}
 }
+\value{
+None
+}
 \description{
 Produces a 2-by-2 panel figure, where each panel is made of an \code{\link{plot.gadget}} image in a different rotation.
 }

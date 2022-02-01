@@ -11,13 +11,16 @@ shape(x, y)
 
 \item{y}{m-by-3 matrix containing the second set of points (e.g. gas)}
 }
+\value{
+list of shape indices and moments
+}
 \description{
 Evaluates the multipole moment differences of two 3D point sets; designed to study large-scale differences between dark matter and gas in N-body simulations.
 }
 \examples{
 # Generate a mock bullet-cluster and output its quadrupole index
-x.gas = cooltools::runif3(4e3)
-x.cdm = t(cbind(t(cooltools::runif3(5e3))-c(1,0,0),t(cooltools::runif3(5e3))+c(1,0,0)))
+x.gas = domath::runif3(4e3)
+x.cdm = t(cbind(t(domath::runif3(5e3))-c(1,0,0),t(domath::runif3(5e3))+c(1,0,0)))
 cat(sprintf('Quadrupole index = \%.2f\n',shape(x.cdm,x.gas)$mu[3]))
 dat = list(PartType0 = list(Coordinates=x.gas), PartType1 = list(Coordinates=x.cdm))
 \dontrun{

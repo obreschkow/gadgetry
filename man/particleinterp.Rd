@@ -35,6 +35,9 @@ particleinterp(
 
 \item{dt}{optional time step used for leapfrog integration; only used if \code{afield} given. The default is \code{dt=abs(t1-t0)/20}.}
 }
+\value{
+list with two matrices \code{x} and \code{v}, representing the interpolated positions and velocities, respectively.
+}
 \description{
 Interpolate/extrapolate particle positions and velocities between discrete time steps. An independent polynomial interpolation along each Cartesian coordinate is used by default. If an acceleration field is specified via the optional argument \code{afield}, a leapfrog integrator with the custom time step \code{dt} is applied. This is particularly useful for interpolation between time steps separated by one or more characteristic orbital times.
 }
@@ -53,15 +56,15 @@ points(c(t0,t1),x(c(t0,t1)),pch=16)
 
 # interpolation/extrapolation
 for (ti in seq(0,5,by=0.1)) {
-  
+
   # using only positions (blue)
   p = particleinterp(x(t0),x(t1),t0,t1,ti)
   points(ti,p$x,col='blue')
-  
+
   # using positions and velocities (red)
   p = particleinterp(x(t0),x(t1),t0,t1,ti,v(t0),v(t1))
   points(ti,p$x,col='red')
-  
+
 }
 
 ## Example 2: particles moving in a spherical gravitational potential
@@ -71,7 +74,7 @@ afield = function(x) -x/rowSums(x^2)
 
 # analytic function of circular orbits
 x = function(t) cbind(x=r*cos(t/r+phi),y=r*sin(t/r+phi)) # positions
-v = function(t) cbind(-sin(t/r+phi),cos(t/r+phi)) # velocities 
+v = function(t) cbind(-sin(t/r+phi),cos(t/r+phi)) # velocities
 
 # specification of two circular orbits
 r = c(1,2) # radii of circular orbits

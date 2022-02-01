@@ -1,6 +1,6 @@
 #' Display a simulation snapshot in four different projections
 #'
-#' @importFrom cooltools runif3 rotation3
+#' @importFrom doplot nplot
 #' @importFrom grDevices pdf dev.off graphics.off
 #' @importFrom graphics lines par text
 #'
@@ -14,6 +14,8 @@
 #' @param scale logical flag, specifying if a length scale is shown
 #' @param width optional horizontal range of the image in the length units of \code{x}. The default corresponds to the full range of particle positions.
 #' @param ... additional parameters for \code{\link{plot.gadget}}.
+#'
+#' @return None
 #'
 #' @seealso \code{\link{plot.gadget}}
 #'
@@ -35,7 +37,7 @@ plot4 = function(x, rotations=c(2,4,1,3), screen = TRUE, pdffile = NULL, title =
     if (make) {
 
       if (mode==1) grDevices::graphics.off()
-      cooltools::nplot(xlim=c(0,1), ylim=c(0,1), pty='s', mar=c(0,0,0,0))
+      doplot::nplot(xlim=c(0,1), ylim=c(0,1), pty='s', mar=c(0,0,0,0))
       p = graphics::par()$plt
 
       ix = iy = 0
@@ -60,7 +62,7 @@ plot4 = function(x, rotations=c(2,4,1,3), screen = TRUE, pdffile = NULL, title =
 
       # lines between panels
       graphics::par(fig=p, new=TRUE, mar=c(0,0,0,0))
-      cooltools::nplot(xlim=c(0,1), ylim=c(0,1))
+      doplot::nplot(xlim=c(0,1), ylim=c(0,1))
       graphics::lines(c(1,1)/2,c(0,1),col='grey')
       graphics::lines(c(0,1),c(1,1)/2,col='grey')
 

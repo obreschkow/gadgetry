@@ -1,6 +1,8 @@
 #' Visualise one or several 3D point sets
 #'
-#' @importFrom cooltools nplot rasterflip lim griddata2 kde2 quadrupole rotation3 vectornorm lightness
+#' @importFrom docore lim
+#' @importFrom domath griddata2 kde2 quadrupole rotation3 vectornorm
+#' @importFrom doplot nplot rasterflip lightness
 #' @importFrom png writePNG
 #' @importFrom grDevices pdf dev.off col2rgb rainbow
 #' @importFrom graphics axis lines par rasterImage rect text arrows
@@ -61,17 +63,17 @@
 #' ## Example of 2x1e4 particles
 #'
 #' # Produce a density plot with different colors for the two particle species
-#' dat = as.gadget(list(cooltools::runif3(1e4), array(rnorm(3e4),c(1e4,3))))
+#' dat = as.gadget(list(domath::runif3(1e4), array(rnorm(3e4),c(1e4,3))))
 #' graphics::par(mar=c(1,1,1,1))
 #' plot(dat, width=5)
 #'
 #' # Only plot particles of species "1" and vary hue with distance from centre
-#' xyradius = as.vector(cooltools::vectornorm(dat$PartType1$Coordinates[,1:2]))
+#' xyradius = as.vector(domath::vectornorm(dat$PartType1$Coordinates[,1:2]))
 #' dat$PartType1$value = xyradius
 #' dat$PartType1$valrange = c(0,2)
 #' graphics::par(mar=c(1,1,1,6))
 #' out = plot(dat, width=5, types=1)
-#' cooltools::colorbar(2.7,-2.5,3,2.5,
+#' doplot::colorbar(2.7,-2.5,3,2.5,
 #'                     col=out$PartType1$col,clim=out$PartType1$valrange,
 #'                     text='xy-distance from center')
 #'
@@ -140,9 +142,9 @@ plot.gadget = function(x, center=NULL, rotation=1, thickness=NULL, width=NULL, a
     }
     if (length(dat[[field]]$col)==1) {
       if (dat[[field]]$color.model=='hsv') {
-        dat[[field]]$col = cooltools::lightness(dat[[field]]$col,seq(0,0.5,length=1000))
+        dat[[field]]$col = doplot::lightness(dat[[field]]$col,seq(0,0.5,length=1000))
       } else {
-        dat[[field]]$col = cooltools::lightness(dat[[field]]$col,seq(0,1,length=1000))
+        dat[[field]]$col = doplot::lightness(dat[[field]]$col,seq(0,1,length=1000))
       }
     }
     out[[field]]$col = dat[[field]]$col
@@ -162,7 +164,7 @@ plot.gadget = function(x, center=NULL, rotation=1, thickness=NULL, width=NULL, a
   }
 
   # determine plotting limits
-  if (is.null(width)) width = 2*sqrt(2)*max(cooltools::vectornorm(x))/sqrt(1+1/aspect^2)
+  if (is.null(width)) width = 2*sqrt(2)*max(domath::vectornorm(x))/sqrt(1+1/aspect^2)
   height = width/aspect
   xlim = c(-1,1)*width/2
   ylim = c(-1,1)*height/2
@@ -179,11 +181,11 @@ plot.gadget = function(x, center=NULL, rotation=1, thickness=NULL, width=NULL, a
 
   # make rotation matrix
   if (length(rotation)==3) {
-    rot = t(cooltools::rotation3(rotation))
+    rot = t(domath::rotation3(rotation))
     if (is.null(xlab)) xlab = expression(e[1])
     if (is.null(ylab)) ylab = expression(e[2])
   } else if (length(rotation)==1) {
-    if (rotation>3) e = eigen(cooltools::quadrupole(x))$vectors
+    if (rotation>3) e = eigen(domath::quadrupole(x))$vectors
     if (rotation==1) {
       rot = diag(3)
       if (is.null(xlab)) xlab = 'x'
@@ -273,20 +275,20 @@ plot.gadget = function(x, center=NULL, rotation=1, thickness=NULL, width=NULL, a
 
     #  raster particle data
     if (dat[[field]]$smoothing==0) {
-      g = cooltools::griddata2(x[sel,1], x[sel,2], w=as.vector(dat[[field]]$value[sel]), xlim=xlim, ylim=ylim, n=c(nx,ny))
+      g = domath::griddata2(x[sel,1], x[sel,2], w=as.vector(dat[[field]]$value[sel]), xlim=xlim, ylim=ylim, n=c(nx,ny))
       out[[field]]$density = g$n
       if (dat[[field]]$color.by.property) out[[field]]$value = g$m/out[[field]]$density
     } else {
       if (kde) {
-        g = cooltools::kde2(x[sel,1], x[sel,2], xlim=xlim, ylim=ylim, n=c(nx,ny), s=dat[[field]]$smoothing/8/dx, sd.max=dat[[field]]$smoothing*2/dx, cpp=TRUE)
+        g = domath::kde2(x[sel,1], x[sel,2], xlim=xlim, ylim=ylim, n=c(nx,ny), s=dat[[field]]$smoothing/8/dx, sd.max=dat[[field]]$smoothing*2/dx, cpp=TRUE)
         out[[field]]$density = g$d
         if (dat[[field]]$color.by.property) {
-          g = cooltools::kde2(x[sel,1], x[sel,2], w=as.vector(dat[[field]]$value[sel]), xlim=xlim, ylim=ylim, n=c(nx,ny), s=dat[[field]]$smoothing/8/dx, sd.max=dat[[field]]$smoothing*2/dx, cpp=TRUE)
+          g = domath::kde2(x[sel,1], x[sel,2], w=as.vector(dat[[field]]$value[sel]), xlim=xlim, ylim=ylim, n=c(nx,ny), s=dat[[field]]$smoothing/8/dx, sd.max=dat[[field]]$smoothing*2/dx, cpp=TRUE)
           out[[field]]$value = g$d/out[[field]]$density
         }
       } else {
         q = dim(x)[1]
-        g = cooltools::griddata2(x[sel,1], x[sel,2], w=as.vector(dat[[field]]$value[sel]), xlim=xlim, ylim=ylim, n=c(nx,ny))
+        g = domath::griddata2(x[sel,1], x[sel,2], w=as.vector(dat[[field]]$value[sel]), xlim=xlim, ylim=ylim, n=c(nx,ny))
         if (requireNamespace("EBImage", quietly=TRUE)) {
           out[[field]]$density = EBImage::gblur(g$n, dat[[field]]$smoothing/dx)
           if (dat[[field]]$color.by.property) out[[field]]$value = EBImage::gblur(g$m, dat[[field]]$smoothing/dx)/out[[field]]$density
@@ -321,7 +323,7 @@ plot.gadget = function(x, center=NULL, rotation=1, thickness=NULL, width=NULL, a
       }
       brightness = sigmoid(brightness,dat[[field]]$hdr)
       # 3) ensure that the density field is strictly contained in [0,1], by cropping minute outlines caused by floating-point errors
-      brightness = cooltools::lim(brightness)
+      brightness = docore::lim(brightness)
 
       # if no values provided use density as values
       if (dat[[field]]$color.by.property) {
@@ -354,11 +356,11 @@ plot.gadget = function(x, center=NULL, rotation=1, thickness=NULL, width=NULL, a
 
   # combine layers
   if (layer!=nlayers) stop('wrong number of layers')
-  img = cooltools::lim(apply(img,1:3,combine.fun))
+  img = docore::lim(apply(img,1:3,combine.fun))
 
   # save raster image as png
   if (!is.null(pngfile)) {
-    png::writePNG(cooltools::rasterflip(img),pngfile)
+    png::writePNG(doplot::rasterflip(img),pngfile)
   }
 
   # show on screen and save as pdf
@@ -378,10 +380,10 @@ plot.gadget = function(x, center=NULL, rotation=1, thickness=NULL, width=NULL, a
     if (make) {
 
       # initialize plot
-      cooltools::nplot(xlim=xlim, ylim=ylim, asp=1, ...)
+      doplot::nplot(xlim=xlim, ylim=ylim, asp=1, ...)
 
       # plot raster
-      graphics::rasterImage(cooltools::rasterflip(img),xlim[1],ylim[1],xlim[2],ylim[2])
+      graphics::rasterImage(doplot::rasterflip(img),xlim[1],ylim[1],xlim[2],ylim[2])
 
       # arrows
       if (arrows) {
