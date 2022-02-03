@@ -126,7 +126,7 @@
 \item{...}{additional parameters for \code{\link[graphics]{plot}}}
 }
 \value{
-Returns a structured list of parameters and arrays useful to analyse and reproduce the figure
+Returns a structured list of parameters and arrays useful to analyse and reproduce the figure.
 }
 \description{
 Produces a raster image visualizing particle positions in 3D N-body/SPH data.
@@ -135,19 +135,21 @@ Produces a raster image visualizing particle positions in 3D N-body/SPH data.
 ## Example of 2x1e4 particles
 
 # Produce a density plot with different colors for the two particle species
-dat = as.gadget(list(domath::runif3(1e4), array(rnorm(3e4),c(1e4,3))))
-graphics::par(mar=c(1,1,1,1))
+dat = as.gadget(list(physx::runif3(1e4), array(rnorm(3e4),c(1e4,3))))
+oldpar = par(mar=c(1,1,1,1))
 plot(dat, width=5)
+par(oldpar)
 
 # Only plot particles of species "1" and vary hue with distance from centre
-xyradius = as.vector(domath::vectornorm(dat$PartType1$Coordinates[,1:2]))
+xyradius = as.vector(physx::vectornorm(dat$PartType1$Coordinates[,1:2]))
 dat$PartType1$value = xyradius
 dat$PartType1$valrange = c(0,2)
-graphics::par(mar=c(1,1,1,6))
+oldpar = par(mar=c(1,1,1,6))
 out = plot(dat, width=5, types=1)
-doplot::colorbar(2.7,-2.5,3,2.5,
+graphx::colorbar(2.7,-2.5,3,2.5,
                     col=out$PartType1$col,clim=out$PartType1$valrange,
                     text='xy-distance from center')
+par(oldpar)
 
 }
 \author{

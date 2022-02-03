@@ -1,6 +1,6 @@
 #' Display a simulation snapshot in four different projections
 #'
-#' @importFrom doplot nplot
+#' @importFrom graphx nplot
 #' @importFrom grDevices pdf dev.off graphics.off
 #' @importFrom graphics lines par text
 #'
@@ -23,6 +23,9 @@
 
 plot4 = function(x, rotations=c(2,4,1,3), screen = TRUE, pdffile = NULL, title = NULL, scale = TRUE, width = NULL, ...) {
 
+  oldpar = par(no.readonly = TRUE)
+  on.exit(par(oldpar))
+
   for (mode in seq(2)) {
 
     make = FALSE
@@ -37,14 +40,15 @@ plot4 = function(x, rotations=c(2,4,1,3), screen = TRUE, pdffile = NULL, title =
     if (make) {
 
       if (mode==1) grDevices::graphics.off()
-      doplot::nplot(xlim=c(0,1), ylim=c(0,1), pty='s', mar=c(0,0,0,0))
-      p = graphics::par()$plt
+      par(pty='s', mar=c(0,0,0,0))
+      graphx::nplot(xlim=c(0,1), ylim=c(0,1))
+      p = par()$plt
 
       ix = iy = 0
 
       for (i in seq(4)) {
 
-        graphics::par(fig=c(p[1]+(p[2]-p[1])*ix/2,p[1]+(p[2]-p[1])*(ix/2+0.5),p[3]+(p[4]-p[3])*iy/2,p[3]+(p[4]-p[3])*(iy/2+0.5)),
+        par(fig=c(p[1]+(p[2]-p[1])*ix/2,p[1]+(p[2]-p[1])*(ix/2+0.5),p[3]+(p[4]-p[3])*iy/2,p[3]+(p[4]-p[3])*(iy/2+0.5)),
             new=TRUE, mar=c(0,0,0,0) )
 
         if (i==1) {
@@ -61,8 +65,8 @@ plot4 = function(x, rotations=c(2,4,1,3), screen = TRUE, pdffile = NULL, title =
       }
 
       # lines between panels
-      graphics::par(fig=p, new=TRUE, mar=c(0,0,0,0))
-      doplot::nplot(xlim=c(0,1), ylim=c(0,1))
+      par(fig=p, new=TRUE, mar=c(0,0,0,0))
+      graphx::nplot(xlim=c(0,1), ylim=c(0,1))
       graphics::lines(c(1,1)/2,c(0,1),col='grey')
       graphics::lines(c(0,1),c(1,1)/2,col='grey')
 
