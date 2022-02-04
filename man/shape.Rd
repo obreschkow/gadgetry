@@ -19,8 +19,8 @@ Evaluates the multipole moment differences of two 3D point sets; designed to stu
 }
 \examples{
 # Generate a mock bullet-cluster and output its quadrupole index
-x.gas = physx::runif3(4e3)
-x.cdm = t(cbind(t(physx::runif3(5e3))-c(1,0,0),t(physx::runif3(5e3))+c(1,0,0)))
+x.gas = cooltools::runif3(4e3)
+x.cdm = t(cbind(t(cooltools::runif3(5e3))-c(1,0,0),t(cooltools::runif3(5e3))+c(1,0,0)))
 cat(sprintf('Quadrupole index = \%.2f\n',shape(x.cdm,x.gas)$mu[3]))
 dat = list(PartType0 = list(Coordinates=x.gas), PartType1 = list(Coordinates=x.cdm))
 \dontrun{

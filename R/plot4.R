@@ -1,6 +1,6 @@
 #' Display a simulation snapshot in four different projections
 #'
-#' @importFrom graphx nplot
+#' @importFrom cooltools nplot
 #' @importFrom grDevices pdf dev.off graphics.off
 #' @importFrom graphics lines par text
 #'
@@ -41,7 +41,7 @@ plot4 = function(x, rotations=c(2,4,1,3), screen = TRUE, pdffile = NULL, title =
 
       if (mode==1) grDevices::graphics.off()
       par(pty='s', mar=c(0,0,0,0))
-      graphx::nplot(xlim=c(0,1), ylim=c(0,1))
+      cooltools::nplot(xlim=c(0,1), ylim=c(0,1))
       p = par()$plt
 
       ix = iy = 0
@@ -66,7 +66,7 @@ plot4 = function(x, rotations=c(2,4,1,3), screen = TRUE, pdffile = NULL, title =
 
       # lines between panels
       par(fig=p, new=TRUE, mar=c(0,0,0,0))
-      graphx::nplot(xlim=c(0,1), ylim=c(0,1))
+      cooltools::nplot(xlim=c(0,1), ylim=c(0,1))
       graphics::lines(c(1,1)/2,c(0,1),col='grey')
       graphics::lines(c(0,1),c(1,1)/2,col='grey')
 

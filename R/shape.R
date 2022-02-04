@@ -1,6 +1,6 @@
 #' Moment difference of two point sets
 #'
-#' @importFrom physx sphericalharmonics runif3
+#' @importFrom cooltools sphericalharmonics runif3
 #'
 #' @description Evaluates the multipole moment differences of two 3D point sets; designed to study large-scale differences between dark matter and gas in N-body simulations.
 #'
@@ -13,8 +13,8 @@
 #'
 #' @examples
 #' # Generate a mock bullet-cluster and output its quadrupole index
-#' x.gas = physx::runif3(4e3)
-#' x.cdm = t(cbind(t(physx::runif3(5e3))-c(1,0,0),t(physx::runif3(5e3))+c(1,0,0)))
+#' x.gas = cooltools::runif3(4e3)
+#' x.cdm = t(cbind(t(cooltools::runif3(5e3))-c(1,0,0),t(cooltools::runif3(5e3))+c(1,0,0)))
 #' cat(sprintf('Quadrupole index = %.2f\n',shape(x.cdm,x.gas)$mu[3]))
 #' dat = list(PartType0 = list(Coordinates=x.gas), PartType1 = list(Coordinates=x.cdm))
 #' \dontrun{
@@ -58,8 +58,8 @@ shape = function(x,y) {
       m = seq(-l,l)
       fx = fy = rep(NA,2*l+1)
       for (i in seq(2*l+1)) {
-        fx[i] = mean(physx::sphericalharmonics(l,m[i],x)*rx)
-        fy[i] = mean(physx::sphericalharmonics(l,m[i],y)*ry)
+        fx[i] = mean(cooltools::sphericalharmonics(l,m[i],x)*rx)
+        fy[i] = mean(cooltools::sphericalharmonics(l,m[i],y)*ry)
       }
       prefactor = sqrt(4*pi/(2*l+1))
       kx = sqrt(sum(abs(fx)^2))
