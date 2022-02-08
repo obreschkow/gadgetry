@@ -82,7 +82,7 @@
 #'
 #' @export
 
-particleinterp = function(x0,x1,t0,t1,ti=0.5,v0=NULL,v1=NULL,afield=NULL,dt=NULL) {
+particleinterp = function(x0,x1,t0,t1,ti,v0=NULL,v1=NULL,afield=NULL,dt=NULL) {
 
   st = ti-t0
   ht = t1-t0

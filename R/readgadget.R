@@ -247,7 +247,7 @@ readgadget = function(file, type='auto') {
 
   }
 
-  class(dat) = 'gadget'
+  class(dat) = 'snapshot'
 
   return(dat)
 

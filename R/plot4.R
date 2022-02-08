@@ -4,20 +4,20 @@
 #' @importFrom grDevices pdf dev.off graphics.off
 #' @importFrom graphics lines par text
 #'
-#' @description Produces a 2-by-2 panel figure, where each panel is made of an \code{\link{plot.gadget}} image in a different rotation.
+#' @description Produces a 2-by-2 panel figure, where each panel is made of an \code{\link{plot.snapshot}} image in a different rotation.
 #'
-#' @param x Gadget data type, which must contain at least one sublist PartType# (with #=0,1,...). For details, see \code{\link{plot.gadget}}.
-#' @param rotations 4-vector or 4-element list specifying four different values/vectors of the argument \code{rotation} in \code{\link{plot.gadget}}. These different rotations are shown in the bottom left, bottom right, top left, and top right panel, respectively, in this order.
+#' @param x Gadget data type, which must contain at least one sublist PartType# (with #=0,1,...). For details, see \code{\link{plot.snapshot}}.
+#' @param rotations 4-vector or 4-element list specifying four different values/vectors of the argument \code{rotation} in \code{\link{plot.snapshot}}. These different rotations are shown in the bottom left, bottom right, top left, and top right panel, respectively, in this order.
 #' @param screen logical flag specifying whether the images is displayed on the screen.
 #' @param pdffile optional pdf-filename to save the image as pdf-file.
 #' @param title Text to be added to the figure.
 #' @param scale logical flag, specifying if a length scale is shown
 #' @param width optional horizontal range of the image in the length units of \code{x}. The default corresponds to the full range of particle positions.
-#' @param ... additional parameters for \code{\link{plot.gadget}}.
+#' @param ... additional parameters for \code{\link{plot.snapshot}}.
 #'
 #' @return None
 #'
-#' @seealso \code{\link{plot.gadget}}
+#' @seealso \code{\link{plot.snapshot}}
 #'
 #' @export
 
@@ -52,11 +52,11 @@ plot4 = function(x, rotations=c(2,4,1,3), screen = TRUE, pdffile = NULL, title =
             new=TRUE, mar=c(0,0,0,0) )
 
         if (i==1) {
-          xlim = plot.gadget(x, rotation = rotations[[i]], pngfile = NULL, pdffile = NULL, screen = TRUE,
+          xlim = plot.snapshot(x, rotation = rotations[[i]], pngfile = NULL, pdffile = NULL, screen = TRUE,
                       scale=FALSE, width=width, ...)$xlim
           if (is.null(width)) {width=diff(xlim)}
         } else {
-          plot.gadget(x, rotation = rotations[[i]], pngfile = NULL, pdffile = NULL, screen = TRUE,
+          plot.snapshot(x, rotation = rotations[[i]], pngfile = NULL, pdffile = NULL, screen = TRUE,
                       scale=ifelse(i==2,scale,FALSE), width=width, ...)
         }
         ix = (ix+1)%%2

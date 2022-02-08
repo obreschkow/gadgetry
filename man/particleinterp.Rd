@@ -9,7 +9,7 @@ particleinterp(
   x1,
   t0,
   t1,
-  ti = 0.5,
+  ti,
   v0 = NULL,
   v1 = NULL,
   afield = NULL,

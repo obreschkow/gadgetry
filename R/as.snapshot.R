@@ -1,6 +1,6 @@
-#' Create GADGET object from particle data
+#' Create GADGET snapshot object from particle data
 #'
-#' @description Converts raw particle data into a \code{gadget} object.
+#' @description Converts raw particle data into a \code{snapshot} object.
 #'
 #' @param x list of N-by-3 matrices specifying the coordinates of particles of various types
 #' @param v optional list of N-by-3 matrices with particle velocities
@@ -8,12 +8,12 @@
 #' @param m optional list of N-vectors with particle masses
 #' @param types optional vector of particle indices. The number of elements in this vector must be the same as the number of matrices in the list \code{x}.
 #'
-#' @return Returns an object of class \code{gadget}, which is a structured list that closely resembles the HDF5 format of Gadget (see \url{https://wwwmpa.mpa-garching.mpg.de/gadget4/}).
+#' @return Returns an object of class \code{snapshot}, which is a structured list that closely resembles the HDF5 format of Gadget (see \url{https://wwwmpa.mpa-garching.mpg.de/gadget4/}).
 #'
 #' @author Danail Obreschkow
 #'
 #' @export
-as.gadget = function(x, v=NULL, m=NULL, id=NULL, types=NULL) {
+as.snapshot = function(x, v=NULL, m=NULL, id=NULL, types=NULL) {
 
   ntypes = length(x)
 
@@ -58,7 +58,7 @@ as.gadget = function(x, v=NULL, m=NULL, id=NULL, types=NULL) {
     }
   }
 
-  class(dat) = 'gadget'
+  class(dat) = 'snapshot'
 
   return(dat)
 

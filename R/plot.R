@@ -61,7 +61,7 @@
 #' ## Example of 2x1e4 particles
 #'
 #' # Produce a density plot with different colors for the two particle species
-#' dat = as.gadget(list(cooltools::runif3(1e4), array(rnorm(3e4),c(1e4,3))))
+#' dat = as.snapshot(list(cooltools::runif3(1e4), array(rnorm(3e4),c(1e4,3))))
 #' oldpar = par(mar=c(1,1,1,1))
 #' plot(dat, width=5)
 #' par(oldpar)
@@ -77,9 +77,9 @@
 #'                     text='xy-distance from center')
 #' par(oldpar)
 #'
-#' @method plot gadget
+#' @method plot snapshot
 #' @export
-plot.gadget = function(x, center=NULL, rotation=1, thickness=NULL, width=NULL, aspect=1, ngrid=300, kde=TRUE, smoothing=NULL, types=NULL,
+plot.snapshot = function(x, center=NULL, rotation=1, thickness=NULL, width=NULL, aspect=1, ngrid=300, kde=TRUE, smoothing=NULL, types=NULL,
                        sample.fraction=1, lum=1, color.model='hsv', hdr=1, fix.luminosity=FALSE, screen=TRUE, pngfile=NULL, pdffile=NULL,
                        combine.fun = sum, title=NULL, title.origin = NULL,
                        arrows = TRUE, arrow.origin = NULL, arrow.length = NULL, arrow.lwd = 1.5,
@@ -287,13 +287,12 @@ plot.gadget = function(x, center=NULL, rotation=1, thickness=NULL, width=NULL, a
           out[[field]]$value = g$d/out[[field]]$density
         }
       } else {
-        q = dim(x)[1]
-        g = cooltools::griddata2(x[sel,1], x[sel,2], w=as.vector(dat[[field]]$value[sel]), xlim=xlim, ylim=ylim, n=c(nx,ny))
-        if (requireNamespace("EBImage", quietly=TRUE)) {
-          if (dat[[field]]$color.by.property) out[[field]]$value = EBImage::gblur(g$m, dat[[field]]$smoothing/dx)/out[[field]]$density
-        } else {
+        if (!requireNamespace("EBImage", quietly=TRUE)) {
           stop('Package EBImage is needed in function plot.gadget if kde=FALSE. Consider using kde=TRUE.')
         }
+        g = cooltools::griddata2(x[sel,1], x[sel,2], w=as.vector(dat[[field]]$value[sel]), xlim=xlim, ylim=ylim, n=c(nx,ny))
+        out[[field]]$density = EBImage::gblur(g$n, dat[[field]]$smoothing/dx)
+        if (dat[[field]]$color.by.property) out[[field]]$value = EBImage::gblur(g$m, dat[[field]]$smoothing/dx)/out[[field]]$density
       }
     }
     out[[field]]$n.eff = sum(out[[field]]$density)
