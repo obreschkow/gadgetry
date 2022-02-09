@@ -7,15 +7,15 @@
 #' @param file filename of snapshot to load. If the snapshot is split into several subvolumes, an asterix symbol (*) can be used in the filename at the place of the subvolume index. In this case, all the subvolumes are loaded and concatenated into a single snapshot with adjusted header information.
 #' @param type character specifying the data format. Must be either of: \code{bin} for binary format, \code{hdf} for HDF5 format or \code{auto} to automatically determine the format from file extension.
 #'
-#' @return Returns an object of class \code{gadget}, which is a structured list that closely resembles the HDF5 format of Gadget (see \url{https://wwwmpa.mpa-garching.mpg.de/gadget4/}). HDF5 names are used in the Header, even when reading binary files (for name conversions, see Table 4 of \url{https://wwwmpa.mpa-garching.mpg.de/gadget/users-guide.pdf}).
+#' @return Returns an object of class \code{snapshot}, which is a structured list that closely resembles the HDF5 format of Gadget (see \url{https://wwwmpa.mpa-garching.mpg.de/gadget4/}). HDF5 names are used in the Header, even when reading binary files (for name conversions, see Table 4 of \url{https://wwwmpa.mpa-garching.mpg.de/gadget/users-guide.pdf}).
 #'
-#' @seealso \code{\link{writegadget}}
+#' @seealso \code{\link{writesnapshot}}
 #'
 #' @author Danail Obreschkow
 #'
 #' @export
 
-readgadget = function(file, type='auto') {
+readsnapshot = function(file, type='auto') {
 
   fn = gsub('\\*','0',file)
 
@@ -52,7 +52,7 @@ readgadget = function(file, type='auto') {
     nfiles = 0
     while (file.exists(fn)) {
       nfiles = nfiles+1
-      subvol[[nfiles]] = .readgadget.single(fn, type)
+      subvol[[nfiles]] = .readsnapshot.single(fn, type)
       fn = gsub('\\*',sprintf('%d',nfiles),file)
     }
 
@@ -80,17 +80,17 @@ readgadget = function(file, type='auto') {
   } else {
 
     # read single file
-    dat = .readgadget.single(fn, type)
+    dat = .readsnapshot.single(fn, type)
 
   }
 
-  class(dat) = 'gadget'
+  class(dat) = 'snapshot'
 
   return(dat)
 
 }
 
-.readgadget.single = function(file, type) {
+.readsnapshot.single = function(file, type) {
 
   # load file
   if (type=='bin') {

@@ -44,7 +44,7 @@
 )
 }
 \arguments{
-\item{x}{Gadget data type, which must contain at least one sublist PartType# (with #=0,1,...). Each sublist PartType# represents one type of particle (e.g. gas, stars, dark matter) and must contain at least the particles coordinates in an N-by-3 matrix \code{Coordinates}. Other optional elements of PartType# are:\cr
+\item{x}{Object of class 'snapshot'. It must contain at least one sublist PartType# (with #=0,1,...). Each sublist PartType# represents one type of particle (e.g. gas, stars, dark matter) and must contain at least the particles coordinates in an N-by-3 matrix \code{Coordinates}. Other optional elements of PartType# are:\cr
 \code{col} = color used to display this particle type. This can be a single color or a vector of colors. If a single color is provided, a range of brightness is produced automatically following the \code{color.model}. If a vector is provided, it is interpreted as a color scale applied to the particles.\cr
 \code{color.model} = character string that must be either \code{hsv} or \code{hsl}. In the former case, the color \code{col} is expanded into a color scale ranging from black to that particular color. In the latter case, the color scale ranges from black to white passing through the color \code{col}.\cr
 \code{value} = optional N-vector of values, one for each particle, which define the position on the color scale. If not given, particles are colored according to their projected density.\cr
@@ -135,7 +135,7 @@ Produces a raster image visualizing particle positions in 3D N-body/SPH data.
 ## Example of 2x1e4 particles
 
 # Produce a density plot with different colors for the two particle species
-dat = as.snapshot(list(cooltools::runif3(1e4), array(rnorm(3e4),c(1e4,3))))
+dat = snapshot(list(cooltools::runif3(1e4), array(rnorm(3e4),c(1e4,3))))
 oldpar = par(mar=c(1,1,1,1))
 plot(dat, width=5)
 par(oldpar)

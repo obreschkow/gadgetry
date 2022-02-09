@@ -1,5 +1,5 @@
 #' Write simulation snapshot in Gadget-2 binary format
-#' 
+#'
 #' @description Write astrophysical N-body+SPH snapshot in Gadget-2 binary format, for use as initial conditions with Gadget Version 1/2/3/4 (SnapFormat=1).
 #'
 #' @param part is a list of initial conditions. It contains the items:\cr
@@ -12,19 +12,19 @@
 #' @param head is a list of header arguments. For full details, please refer to the Gadget-2 manual (\url{https://wwwmpa.mpa-garching.mpg.de/gadget/users-guide.pdf}, page 33). The most important items are:\cr
 #' \code{Npart} = 6-vector giving the number of particles of each type. The first element corresponds to gas particles; the other five are treated as collision-less.\cr
 #' \code{NMassarr} = optional 6-vector listing a fixed mass for each particle type. If set to 0 for a type which is present, individual particle masses must be provided in the vector part$m.\cr\cr
-#' 
+#'
 #' @param file filename.
-#' 
+#'
 #' @return Returns a list containing the particle data. The format of the list depends on the input format.
-#' 
-#' @seealso \code{\link{readgadget}}
-#' 
+#'
+#' @seealso \code{\link{readsnapshot}}
+#'
 #' @author Danail Obreschkow
 #'
 #' @export
 
-writegadget = function (part, head, file) {
-  
+writesnapshot = function (part, head, file) {
+
   # checks
   if (is.null(head$Npart)) stop('head$Npart must be provided')
   if (length(head$Npart)!=6) stop('head$Npart must be a vector of 6 integers')
@@ -60,7 +60,7 @@ writegadget = function (part, head, file) {
   } else {
     if (!is.null(part$u)) stop('if no gas is present (head$Npart[1]=0), part$u must not be provided')
   }
-  
+
   # initialize
   block.terminator = function(val) writeBin(as.integer(val), data, size=4)
   writeif = function(val, size) {
@@ -72,10 +72,10 @@ writegadget = function (part, head, file) {
     }
     writeBin(val, data, size = size)
   }
-  
+
   # open file
   data = file(file, "wb")
-  
+
   # write header
   block.terminator(256)
   writeBin(as.integer(head$Npart), data, size = 4) # 24 bytes
@@ -97,36 +97,36 @@ writegadget = function (part, head, file) {
   writeif(head$flag_entr_ics, size = 4)
   writeBin(as.integer(rep(0, 15)), data, size = 4)
   block.terminator(256)
-  
+
   # write positions
   block.terminator(12*n)
   writeBin(as.numeric(t(part$x)), data, size = 4)
   block.terminator(12*n)
-  
+
   # write velocities
   block.terminator(12*n)
   writeBin(as.numeric(t(part$v)), data, size = 4)
   block.terminator(12*n)
-  
+
   # write IDs
   block.terminator(4*n)
   writeBin(as.integer(part$i), data, size = 4)
   block.terminator(4*n)
-  
+
   # write masses
   if (!is.null(part$m)) {
     block.terminator(4*length(part$m))
     writeBin(as.numeric(part$m), data, size = 4)
     block.terminator(4*length(part$m))
   }
-  
+
   # write internal energies
   if (!is.null(part$u)) {
     block.terminator(4*length(part$u))
     writeBin(as.numeric(part$u), data, size = 4)
     block.terminator(4*length(part$u))
   }
-  
+
   # close file
   close(data)
 }

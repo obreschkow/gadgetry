@@ -13,7 +13,7 @@
 #' @author Danail Obreschkow
 #'
 #' @export
-as.snapshot = function(x, v=NULL, m=NULL, id=NULL, types=NULL) {
+snapshot = function(x, v=NULL, m=NULL, id=NULL, types=NULL) {
 
   ntypes = length(x)
 
