@@ -11,11 +11,11 @@ snapshotinterp(sn0, sn1, ti, fraction = FALSE, afield = NULL, dt = NULL)
 
 \item{sn1}{optional second gadget snapshot}
 
-\item{ti}{single number giving the time of the interpolated/extrapolated output positions and velocities}
+\item{ti}{time of the interpolated/extrapolated output positions and velocities}
 
 \item{fraction}{logical flag (default \code{FALSE}). If \code{TRUE}, the number \code{ti} is interpreted as fractional time between the two snapshots, ranging linearly between 0 and 1.}
 
-\item{afield}{optional acceleration field for leapfrog integration. This must be a function of a n-by-d array representing n position vectors, which returns an n-by-d array with the n acceleration vectors in the same length and time units as x and v.}
+\item{afield}{optional acceleration field for leapfrog integration. This must be a function of a n-by-3 array representing n position vectors, which returns an n-by-3 array with the n acceleration vectors in the same length and time units as x and v.}
 
 \item{dt}{optional time step used for leapfrog integration; only used if \code{afield} given. The default is \code{dt=abs(t1-t0)/20}.}
 }

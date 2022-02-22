@@ -133,20 +133,22 @@ Produces a raster image visualizing particle positions in 3D N-body/SPH data.
 }
 \examples{
 # plot test snapshot
-sn = readsnapshot(system.file('test_snapshot.hdf5', package='gadgetry'))
+filename = system.file('test_snapshot.hdf5', package='gadgetry')
+sn = readsnapshot(filename)
 plot(sn)
 
 # prettify the plot
-sn$PartType1$col = '#6615ff'
 sn$PartType1$smoothing = 10
-sn$PartType2$col = 'white'
 sn$PartType2$smoothing = 3
-sn$PartType2$lum = 0.1
-sn$PartType2$hdr = 3
-plot(sn, length.unit='kpc', width=600)
+sn$PartType2$lum = 0.5
+out = plot(sn, length.unit='kpc', width=600)
+col = c(rev(out$PartType1$col)[1], rev(out$PartType2$col)[1])
 legend(-300,300,c('Dark matter','Stars'),
-       col=allpart(sn,'col'),pch=16,text.col=allpart(sn,'col'),bty='n')
+       col=col,pch=16,text.col=col,bty='n')
 
+}
+\seealso{
+\code{\link{plot4}}
 }
 \author{
 Danail Obreschkow

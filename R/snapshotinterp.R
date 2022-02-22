@@ -4,9 +4,9 @@
 #'
 #' @param sn0 gadget snapshot
 #' @param sn1 optional second gadget snapshot
-#' @param ti single number giving the time of the interpolated/extrapolated output positions and velocities
+#' @param ti time of the interpolated/extrapolated output positions and velocities
 #' @param fraction logical flag (default \code{FALSE}). If \code{TRUE}, the number \code{ti} is interpreted as fractional time between the two snapshots, ranging linearly between 0 and 1.
-#' @param afield optional acceleration field for leapfrog integration. This must be a function of a n-by-d array representing n position vectors, which returns an n-by-d array with the n acceleration vectors in the same length and time units as x and v.
+#' @param afield optional acceleration field for leapfrog integration. This must be a function of a n-by-3 array representing n position vectors, which returns an n-by-3 array with the n acceleration vectors in the same length and time units as x and v.
 #' @param dt optional time step used for leapfrog integration; only used if \code{afield} given. The default is \code{dt=abs(t1-t0)/20}.
 #'
 #' @return snapshot object with interpolated particle properties.
@@ -74,8 +74,24 @@ snapshotinterp = function(sn0,sn1,ti,fraction=FALSE,afield=NULL,dt=NULL) {
       v1 = allpart(sn1,'Velocities')
     }
 
+    # rescale velocities
+    if (!is.null(sn0$Header$Redshift)) {
+      # determine scale factors
+      a0 = 1/(1+sn0$Header$Redshift)
+      a1 = 1/(1+sn1$Header$Redshift)
+      # convert from computation units to the internal *comoving* length/time units of the simulation
+      v0 = v0/sqrt(a0)
+      v1 = v1/sqrt(a1)
+    }
+
     # interpolate positions & velocities
     p = particleinterp(x0=x0,x1=x1,t0=t0,t1=t1,ti=ti,v0=v0,v1=v1,afield=afield,dt=dt)
+
+    if (!is.null(sn0$Header$Redshift)) {
+      f = (ti-t0)/(t1-t0)
+      ai = a0*(1-f)+a1*f
+      p$v = p$v*sqrt(ai) # convert interpolated velocities back to computational units
+    }
 
     # replace positions and velocities for interpolated values
     n = 0

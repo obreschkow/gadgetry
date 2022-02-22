@@ -55,23 +55,24 @@
 #'
 #' @return Returns a structured list of parameters and arrays useful to analyse and reproduce the figure.
 #'
+#' @seealso \code{\link{plot4}}
+#'
 #' @author Danail Obreschkow
 #'
 #' @examples
 #' # plot test snapshot
-#' sn = readsnapshot(system.file('test_snapshot.hdf5', package='gadgetry'))
+#' filename = system.file('test_snapshot.hdf5', package='gadgetry')
+#' sn = readsnapshot(filename)
 #' plot(sn)
 #'
 #' # prettify the plot
-#' sn$PartType1$col = '#6615ff'
 #' sn$PartType1$smoothing = 10
-#' sn$PartType2$col = 'white'
 #' sn$PartType2$smoothing = 3
-#' sn$PartType2$lum = 0.1
-#' sn$PartType2$hdr = 3
-#' plot(sn, length.unit='kpc', width=600)
+#' sn$PartType2$lum = 0.5
+#' out = plot(sn, length.unit='kpc', width=600)
+#' col = c(rev(out$PartType1$col)[1], rev(out$PartType2$col)[1])
 #' legend(-300,300,c('Dark matter','Stars'),
-#'        col=allpart(sn,'col'),pch=16,text.col=allpart(sn,'col'),bty='n')
+#'        col=col,pch=16,text.col=col,bty='n')
 #'
 #' @method plot snapshot
 #' @export
@@ -130,7 +131,7 @@ plot.snapshot = function(x, center=NULL, rotation=1, thickness=NULL, width=NULL,
         dat[[field]]$col = grDevices::rainbow(256,end=5/6)
       } else {
         if (type<=5) {
-          dat[[field]]$col = c('#ff0010', '#0515ff', 'green', 'orange', 'yellow', 'purple')[type+1]
+          dat[[field]]$col = c('#ff0010', '#4415ff', 'white', 'yellow', 'orange', 'purple')[type+1]
         } else {
           dat[[field]]$col = 'white'
         }
@@ -224,7 +225,7 @@ plot.snapshot = function(x, center=NULL, rotation=1, thickness=NULL, width=NULL,
   dx = width/nx # pixel size in simulation length units
 
   # determine default smoothing
-  if (is.null(smoothing)) smoothing = mean.length*0.01 # [length units of sim]
+  if (is.null(smoothing)) smoothing = mean.length*0.005 # [length units of sim]
 
   # put particles on a grid
   for (type in types) {
@@ -315,7 +316,8 @@ plot.snapshot = function(x, center=NULL, rotation=1, thickness=NULL, width=NULL,
         b = ((2/(2-f))^a-1)/(a*f)
         1-1/(x*a*b+1)^(1/a)
       }
-      brightness = sigmoid(brightness,dat[[field]]$hdr)
+      brightness = sigmoid(brightness,dat[[field]]$hdr*3
+                           )
       # 3) ensure that the density field is strictly contained in [0,1], by cropping minute outlines caused by floating-point errors
       brightness = cooltools::lim(brightness)
 
@@ -408,7 +410,7 @@ plot.snapshot = function(x, center=NULL, rotation=1, thickness=NULL, width=NULL,
 
   # return results
   out$rgb = img
-  out$header = list(xlim=xlim, ylim=ylim, center=center, rotationmatrix = rot)
+  out$header = list(xlim=xlim, ylim=ylim, center=center, rotationmatrix=rot, col)
   invisible(out)
 
 }
