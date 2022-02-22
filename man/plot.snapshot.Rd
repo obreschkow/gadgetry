@@ -132,24 +132,20 @@ Returns a structured list of parameters and arrays useful to analyse and reprodu
 Produces a raster image visualizing particle positions in 3D N-body/SPH data.
 }
 \examples{
-## Example of 2x1e4 particles
+# plot test snapshot
+sn = readsnapshot(system.file('test_snapshot.hdf5', package='gadgetry'))
+plot(sn)
 
-# Produce a density plot with different colors for the two particle species
-dat = snapshot(list(cooltools::runif3(1e4), array(rnorm(3e4),c(1e4,3))))
-oldpar = par(mar=c(1,1,1,1))
-plot(dat, width=5)
-par(oldpar)
-
-# Only plot particles of species "1" and vary hue with distance from centre
-xyradius = as.vector(cooltools::vectornorm(dat$PartType1$Coordinates[,1:2]))
-dat$PartType1$value = xyradius
-dat$PartType1$valrange = c(0,2)
-oldpar = par(mar=c(1,1,1,6))
-out = plot(dat, width=5, types=1)
-cooltools::colorbar(2.7,-2.5,3,2.5,
-                    col=out$PartType1$col,clim=out$PartType1$valrange,
-                    text='xy-distance from center')
-par(oldpar)
+# prettify the plot
+sn$PartType1$col = '#6615ff'
+sn$PartType1$smoothing = 10
+sn$PartType2$col = 'white'
+sn$PartType2$smoothing = 3
+sn$PartType2$lum = 0.1
+sn$PartType2$hdr = 3
+plot(sn, length.unit='kpc', width=600)
+legend(-300,300,c('Dark matter','Stars'),
+       col=allpart(sn,'col'),pch=16,text.col=allpart(sn,'col'),bty='n')
 
 }
 \author{

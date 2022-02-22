@@ -19,6 +19,16 @@
 #'
 #' @seealso \code{\link{plot.snapshot}}
 #'
+#' @examples
+#' sn = readsnapshot(system.file('test_snapshot.hdf5', package='gadgetry'))
+#' sn$PartType1$col = '#6615ff'
+#' sn$PartType1$smoothing = 10
+#' sn$PartType2$col = 'white'
+#' sn$PartType2$smoothing = 3
+#' sn$PartType2$lum = 0.1
+#' sn$PartType2$hdr = 3
+#' plot4(sn, length.unit='kpc', width=600)
+#'
 #' @export
 
 plot4 = function(x, rotations=c(2,4,1,3), screen = TRUE, pdffile = NULL, title = NULL, scale = TRUE, width = NULL, ...) {

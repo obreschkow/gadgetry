@@ -18,7 +18,8 @@ None.
 Summarizes the content of 'snapshot' class objects.
 }
 \examples{
-sn = snapshot(list(cooltools::runif3(1e4), array(rnorm(3e4),c(1e4,3))))
+filename = system.file('test_snapshot.hdf5', package='gadgetry')
+sn = readsnapshot(filename)
 summary(sn)
 
 }

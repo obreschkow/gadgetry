@@ -38,6 +38,17 @@ None
 \description{
 Produces a 2-by-2 panel figure, where each panel is made of an \code{\link{plot.snapshot}} image in a different rotation.
 }
+\examples{
+sn = readsnapshot(system.file('test_snapshot.hdf5', package='gadgetry'))
+sn$PartType1$col = '#6615ff'
+sn$PartType1$smoothing = 10
+sn$PartType2$col = 'white'
+sn$PartType2$smoothing = 3
+sn$PartType2$lum = 0.1
+sn$PartType2$hdr = 3
+plot4(sn, length.unit='kpc', width=600)
+
+}
 \seealso{
 \code{\link{plot.snapshot}}
 }

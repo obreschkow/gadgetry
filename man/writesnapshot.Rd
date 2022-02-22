@@ -7,7 +7,7 @@
 writesnapshot(part, head, file)
 }
 \arguments{
-\item{part}{is a list of initial conditions. It contains the items:\cr
+\item{part}{is a list of particle properties, for example to be used as initial conditions for a simulation. It contains the items:\cr
 \code{x} = N-by-3 matrix specifying the initial position in Cartesian coordinates of the N particles\cr
 \code{v} = optional N-by-3 matrix specifying the initial velocities. If not given, velocities are set to zero.\cr
 \code{id} = optional N-by-3 matrix specifying unique particle IDs. If not given, the particles will be numbered sequentially from 1 to N.\cr
