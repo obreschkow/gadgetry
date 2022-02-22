@@ -8,17 +8,15 @@
 #' @description Produces a raster image visualizing particle positions in 3D N-body/SPH data.
 #'
 #' @param x Object of class 'snapshot'. It must contain at least one sublist PartType# (with #=0,1,...). Each sublist PartType# represents one type of particle (e.g. gas, stars, dark matter) and must contain at least the particles coordinates in an N-by-3 matrix \code{Coordinates}. Other optional elements of PartType# are:\cr
-#' \code{col} = color used to display this particle type. This can be a single color or a vector of colors. If a single color is provided, a range of brightness is produced automatically following the \code{color.model}. If a vector is provided, it is interpreted as a color scale applied to the particles.\cr
-#' \code{color.model} = character string that must be either \code{hsv} or \code{hsl}. In the former case, the color \code{col} is expanded into a color scale ranging from black to that particular color. In the latter case, the color scale ranges from black to white passing through the color \code{col}.\cr
+#' \code{col} = color used to display this particle type. This can be a single color or a vector of colors. If a single color is provided, a range of brightness of that color is produced automatically .\cr
 #' \code{value} = optional N-vector of values, one for each particle, which define the position on the color scale. If not given, particles are colored according to their projected density.\cr
 #' \code{valrange} = optional 2-vector specifying the values corresponding to the limits of the color scale. Only used if the N-vector \code{value} is given.\cr
 #' \code{density.scaling} = logical flag (default TRUE), specifying whether the brightness is scaled with the particle density if \code{value} is given.\cr
 #' \code{lum} = overall scaling factor for the color scale.\cr
-#' \code{hdr} = parameter specifying the size of the dynamic range to be represented by the color scale. The larger the value, the higher the dynamic range.\cr
+#' \code{gamma} = gamma parameter setting the non-linear conversion between density and brightness/color. The larger the value, the higher the dynamic range.\cr
 #' \code{kde} = logical flag (default TRUE), whether the particles are smoothed using an adaptive kernel density estimator.\cr
 #' \code{smoothing} = smoothing scale in simulation units. If not given, a value is set automatically to one percent of the geometric mean of width and height.\cr\cr
 #' @param types vector specifying the particle types to be displayed. These numbers must correspond to the # in the sublists PartType#. If not given, all particle species are shown.
-#' @param combine.fun function used to combined the image layers corresponding to different particle species. Typically, this is set to \code{sum} or \code{mean}.
 #' @param center optional 3-vector specifying the coordinate at the center of the plot. The default is the geometric center (= center of mass, if all particle masses are equal).
 #' @param rotation either an integer (1-6), a 3-vector or a 3-by-3 matrix, specifying a rotation of the 3D particle positions. In case of an integer: 1=(x,y)-plane, 2=(y,z)-plane, 3=(x,z)-plane, 4=(qmax,qmin)-plane, 5=(qmax,qmid)-plane, 6=(qmid,qmin)-plane, where qmax/qmid/qmin are the eigenvectors of the particle-quadrupole, associated with the maximum/middle/minimum eigenvalues, respectively. If \code{rotation} is a vector, its direction specifies the rotation axis and its norm the rotation angle in radians in the positive geometric sense.
 #' @param width optional horizontal range of the image in simulation units. The default corresponds to the full range of particle positions.
@@ -26,11 +24,11 @@
 #' @param aspect aspect ratio (= width/height).
 #' @param ngrid number of grid cells per side in the output image. If the image is not square ngrid is interpreted as the geometric mean between the horizontal and the vertical number of pixels, such that the total number of pixels remains about ngrid^2.
 #' @param fix.luminosity logical flag specifying whether the brightness should scale with the number of particles in the field of view. Set this to \code{FALSE} to avoid luminosity fluctuations in movies.
-#' @param color.model default value used in \code{dat$PartType#} (see above).
 #' @param lum default value used in \code{dat$PartType#} (see above).
-#' @param hdr default value used in \code{dat$PartType#} (see above).
+#' @param gamma default value used in \code{dat$PartType#} (see above).
 #' @param kde default value used in \code{dat$PartType#} (see above).
 #' @param smoothing default value used in \code{dat$PartType#} (see above).
+#' @param shadows overall contrast value.
 #' @param sample.fraction fraction of particles to be used. Ff 1, all particles are used, if <1 a random subsample is drawn.
 #' @param screen logical flag specifying whether the images is displayed on the screen.
 #' @param pngfile optional png-filename to save the image as raster image.
@@ -66,19 +64,21 @@
 #' plot(sn)
 #'
 #' # prettify the plot
-#' sn$PartType1$smoothing = 10
-#' sn$PartType2$smoothing = 3
-#' sn$PartType2$lum = 0.5
-#' out = plot(sn, length.unit='kpc', width=600)
-#' col = c(rev(out$PartType1$col)[1], rev(out$PartType2$col)[1])
+#' sn$PartType1$smoothing = 7
+#' sn$PartType2$smoothing = 2.5
+#' sn$PartType2$lum = 0.3
+#' sn$PartType2$gamma = 0.8
+#' sn$PartType2$col = '#ff4444'
+#' out = plot(sn, length.unit='kpc', width=600,shadows=1.2)
+#' col = cooltools::lightness(allpart(out, 'col'), 0.7)
 #' legend(-300,300,c('Dark matter','Stars'),
 #'        col=col,pch=16,text.col=col,bty='n')
 #'
 #' @method plot snapshot
 #' @export
 plot.snapshot = function(x, center=NULL, rotation=1, thickness=NULL, width=NULL, aspect=1, ngrid=300, kde=TRUE, smoothing=NULL, types=NULL,
-                       sample.fraction=1, lum=1, color.model='hsv', hdr=1, fix.luminosity=FALSE, screen=TRUE, pngfile=NULL, pdffile=NULL,
-                       combine.fun = sum, title=NULL, title.origin = NULL,
+                       sample.fraction=1, lum=1, gamma=1, shadows=1, fix.luminosity=FALSE, screen=TRUE, pngfile=NULL, pdffile=NULL,
+                       title=NULL, title.origin = NULL,
                        arrows = TRUE, arrow.origin = NULL, arrow.length = NULL, arrow.lwd = 1.5,
                        scale = TRUE, scale.origin = NULL, scale.length = NULL, scale.lwd = 1.5, length.unit = '',
                        xlab = NULL, ylab = NULL, cex=1, text.offset = 0, text.col = 'white', ...) {
@@ -98,6 +98,7 @@ plot.snapshot = function(x, center=NULL, rotation=1, thickness=NULL, width=NULL,
 
   # check and pre-process input arguments ######################################
   if (min(types)<0) stop('particle types must be non-negative integers')
+  n.tot.all = 0
 
   for (type in types) {
 
@@ -106,7 +107,7 @@ plot.snapshot = function(x, center=NULL, rotation=1, thickness=NULL, width=NULL,
 
     # handle brightness parameters
     if (is.null(dat[[field]]$lum)) dat[[field]]$lum=lum
-    if (is.null(dat[[field]]$hdr)) dat[[field]]$hdr=hdr
+    if (is.null(dat[[field]]$gamma)) dat[[field]]$gamma=gamma
 
     # handle values
     dat[[field]]$color.by.property = !is.null(dat[[field]]$value)
@@ -117,35 +118,26 @@ plot.snapshot = function(x, center=NULL, rotation=1, thickness=NULL, width=NULL,
     }
     out[[field]]$valrange = dat[[field]]$valrange
 
-    # color model
-    if (is.null(dat[[field]]$color.model)) {
-      dat[[field]]$color.model = color.model
-    }
-    if (!dat[[field]]$color.model%in%c('hsl','hsv')) {
-      stop('if specified, the color.model must be equal to "hsl" or "hsv".')
-    }
-
     # determine particle color
-    if (is.null(dat[[field]]$col)) {
+    if (is.null(dat[[field]][['col']])) {
       if (dat[[field]]$color.by.property) {
-        dat[[field]]$col = grDevices::rainbow(256,end=5/6)
+        dat[[field]][['col']] = grDevices::rainbow(256,end=5/6)
       } else {
         if (type<=5) {
-          dat[[field]]$col = c('#ff0010', '#4415ff', 'white', 'yellow', 'orange', 'purple')[type+1]
+          dat[[field]][['col']] = c('#ff0010', '#1515ff', 'white', 'yellow', 'orange', 'purple')[type+1]
         } else {
-          dat[[field]]$col = 'white'
+          dat[[field]][['col']] = 'white'
         }
       }
     }
+    out[[field]][['col']] = dat[[field]][['col']]
+
     if (length(dat[[field]]$col)==1) {
-      if (dat[[field]]$color.model=='hsv') {
-        dat[[field]]$col = cooltools::lightness(dat[[field]]$col,seq(0,0.5,length=1000))
-      } else {
-        dat[[field]]$col = cooltools::lightness(dat[[field]]$col,seq(0,1,length=1000))
-      }
+      col = grDevices::col2rgb(dat[[field]]$col)/255
+      dat[[field]]$colrgb = cbind(col%*%seq(0,1,length=5000),c(0,0,0))
+    } else {
+      dat[[field]]$colrgb = cbind(grDevices::col2rgb(dat[[field]]$col)/255,c(0,0,0))
     }
-    out[[field]]$col = dat[[field]]$col
-    dat[[field]]$colrgb = cbind(grDevices::col2rgb(dat[[field]]$col)/255,c(0,0,0))
 
   }
   # end input handling #########################################################
@@ -228,6 +220,7 @@ plot.snapshot = function(x, center=NULL, rotation=1, thickness=NULL, width=NULL,
   if (is.null(smoothing)) smoothing = mean.length*0.005 # [length units of sim]
 
   # put particles on a grid
+  n.eff.all = 0
   for (type in types) {
 
     field = sprintf('PartType%d',type)
@@ -247,6 +240,7 @@ plot.snapshot = function(x, center=NULL, rotation=1, thickness=NULL, width=NULL,
 
     # compute total number of particles
     out[[field]]$n.tot = dim(x)[1]
+    n.tot.all = n.tot.all+dim(x)[1]
 
     # translate particles to custom center
     x = sweep(x, 2, center)
@@ -292,7 +286,10 @@ plot.snapshot = function(x, center=NULL, rotation=1, thickness=NULL, width=NULL,
         if (dat[[field]]$color.by.property) out[[field]]$value = EBImage::gblur(g$m, dat[[field]]$smoothing/dx)/out[[field]]$density
       }
     }
+    out[[field]]$density[out[[field]]$density<0] = 0
+    if (dat[[field]]$color.by.property) out[[field]]$value[out[[field]]$value<0] = 0
     out[[field]]$n.eff = sum(out[[field]]$density)
+    n.eff.all = n.eff.all+out[[field]]$n.eff
   }
 
   # turn density and value matrices into RGB layers
@@ -307,19 +304,8 @@ plot.snapshot = function(x, center=NULL, rotation=1, thickness=NULL, width=NULL,
       layer = layer+1
 
       # convert density to brightness
-      # 1) linearly rescale the density field as a function of grid cells, particle numbers and custom 'lum' parameter
-      scaling = (0.5*dat[[field]]$lum)*ngrid^2/max(1,ifelse(fix.luminosity,out[[field]]$n.tot,out[[field]]$n.eff)) # linear luminosity scaling factor
-      brightness = scaling*out[[field]]$density
-      # 2) remap density field from the domain [0,infinity) to [0,1] using a generalised Sigmoid function
-      sigmoid = function(x,a=1) {
-        f = 1 # value of x where sigmoid(x)=x/2
-        b = ((2/(2-f))^a-1)/(a*f)
-        1-1/(x*a*b+1)^(1/a)
-      }
-      brightness = sigmoid(brightness,dat[[field]]$hdr*3
-                           )
-      # 3) ensure that the density field is strictly contained in [0,1], by cropping minute outlines caused by floating-point errors
-      brightness = cooltools::lim(brightness)
+      linear.scaling = 0.1*dat[[field]]$lum*ngrid^2/max(1,ifelse(fix.luminosity,n.tot.all,n.eff.all)) # linear luminosity scaling factor
+      brightness = (linear.scaling*out[[field]]$density)^dat[[field]]$gamma
 
       # if no values provided use density as values
       if (dat[[field]]$color.by.property) {
@@ -331,9 +317,10 @@ plot.snapshot = function(x, center=NULL, rotation=1, thickness=NULL, width=NULL,
       # turn value into color
       nvalcol = dim(dat[[field]]$colrgb)[2]-1
       for (k in seq(3)) {
-        index = round(pmax(0,pmin(1,(as.vector(val)-dat[[field]]$valrange[1])/diff(dat[[field]]$valrange)))*(nvalcol-1)+1)
+        normalised.value = (as.vector(val)-dat[[field]]$valrange[1])/diff(dat[[field]]$valrange)
+        index = round(pmax(0,pmin(1,normalised.value))*(nvalcol-1)+1)
         index[is.na(index)] = nvalcol+1
-        img[,,k,layer] = dat[[field]]$colrgb[k,index]
+        img[,,k,layer] = dat[[field]]$colrgb[k,index]*(1+pmax(0,normalised.value-1))
       }
 
       # adjust brightness as a function of density if hue represents a property
@@ -352,7 +339,15 @@ plot.snapshot = function(x, center=NULL, rotation=1, thickness=NULL, width=NULL,
 
   # combine layers
   if (layer!=nlayers) stop('wrong number of layers')
-  img = cooltools::lim(apply(img,1:3,combine.fun))
+
+  # sum color layers
+  img = apply(img,1:3,sum)
+
+  # apply non-linear brightness scale to each RGB channel individually
+  img = atan(img)/pi*2
+  f = 10^max(0,2.2*shadows)
+  img = log10(f*img+1)/log10(f+1)
+  img = cooltools::lim(img) # to get rid of small numerical outliers
 
   # save raster image as png
   if (!is.null(pngfile)) {

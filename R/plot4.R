@@ -22,9 +22,11 @@
 #' @examples
 #' filename = system.file('test_snapshot.hdf5', package='gadgetry')
 #' sn = readsnapshot(filename)
-#' sn$PartType1$smoothing = 10
-#' sn$PartType2$smoothing = 3
-#' sn$PartType2$lum = 0.5
+#' sn$PartType1$smoothing = 7
+#' sn$PartType2$smoothing = 2.5
+#' sn$PartType2$lum = 0.3
+#' sn$PartType2$gamma = 0.8
+#' sn$PartType2$col = '#ff4444'
 #' plot4(sn, length.unit='kpc', width=600)
 #'
 #' @export

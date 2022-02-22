@@ -17,13 +17,12 @@
   types = NULL,
   sample.fraction = 1,
   lum = 1,
-  color.model = "hsv",
-  hdr = 1,
+  gamma = 1,
+  shadows = 1,
   fix.luminosity = FALSE,
   screen = TRUE,
   pngfile = NULL,
   pdffile = NULL,
-  combine.fun = sum,
   title = NULL,
   title.origin = NULL,
   arrows = TRUE,
@@ -45,13 +44,12 @@
 }
 \arguments{
 \item{x}{Object of class 'snapshot'. It must contain at least one sublist PartType# (with #=0,1,...). Each sublist PartType# represents one type of particle (e.g. gas, stars, dark matter) and must contain at least the particles coordinates in an N-by-3 matrix \code{Coordinates}. Other optional elements of PartType# are:\cr
-\code{col} = color used to display this particle type. This can be a single color or a vector of colors. If a single color is provided, a range of brightness is produced automatically following the \code{color.model}. If a vector is provided, it is interpreted as a color scale applied to the particles.\cr
-\code{color.model} = character string that must be either \code{hsv} or \code{hsl}. In the former case, the color \code{col} is expanded into a color scale ranging from black to that particular color. In the latter case, the color scale ranges from black to white passing through the color \code{col}.\cr
+\code{col} = color used to display this particle type. This can be a single color or a vector of colors. If a single color is provided, a range of brightness of that color is produced automatically .\cr
 \code{value} = optional N-vector of values, one for each particle, which define the position on the color scale. If not given, particles are colored according to their projected density.\cr
 \code{valrange} = optional 2-vector specifying the values corresponding to the limits of the color scale. Only used if the N-vector \code{value} is given.\cr
 \code{density.scaling} = logical flag (default TRUE), specifying whether the brightness is scaled with the particle density if \code{value} is given.\cr
 \code{lum} = overall scaling factor for the color scale.\cr
-\code{hdr} = parameter specifying the size of the dynamic range to be represented by the color scale. The larger the value, the higher the dynamic range.\cr
+\code{gamma} = gamma parameter setting the non-linear conversion between density and brightness/color. The larger the value, the higher the dynamic range.\cr
 \code{kde} = logical flag (default TRUE), whether the particles are smoothed using an adaptive kernel density estimator.\cr
 \code{smoothing} = smoothing scale in simulation units. If not given, a value is set automatically to one percent of the geometric mean of width and height.\cr\cr}
 
@@ -77,9 +75,9 @@
 
 \item{lum}{default value used in \code{dat$PartType#} (see above).}
 
-\item{color.model}{default value used in \code{dat$PartType#} (see above).}
+\item{gamma}{default value used in \code{dat$PartType#} (see above).}
 
-\item{hdr}{default value used in \code{dat$PartType#} (see above).}
+\item{shadows}{overall contrast value.}
 
 \item{fix.luminosity}{logical flag specifying whether the brightness should scale with the number of particles in the field of view. Set this to \code{FALSE} to avoid luminosity fluctuations in movies.}
 
@@ -88,8 +86,6 @@
 \item{pngfile}{optional png-filename to save the image as raster image.}
 
 \item{pdffile}{optional pdf-filename to save the image as pdf-file.}
-
-\item{combine.fun}{function used to combined the image layers corresponding to different particle species. Typically, this is set to \code{sum} or \code{mean}.}
 
 \item{title}{Text to be added to the figure.}
 
@@ -138,11 +134,13 @@ sn = readsnapshot(filename)
 plot(sn)
 
 # prettify the plot
-sn$PartType1$smoothing = 10
-sn$PartType2$smoothing = 3
-sn$PartType2$lum = 0.5
-out = plot(sn, length.unit='kpc', width=600)
-col = c(rev(out$PartType1$col)[1], rev(out$PartType2$col)[1])
+sn$PartType1$smoothing = 7
+sn$PartType2$smoothing = 2.5
+sn$PartType2$lum = 0.3
+sn$PartType2$gamma = 0.8
+sn$PartType2$col = '#ff4444'
+out = plot(sn, length.unit='kpc', width=600,shadows=1.2)
+col = cooltools::lightness(allpart(out, 'col'), 0.7)
 legend(-300,300,c('Dark matter','Stars'),
        col=col,pch=16,text.col=col,bty='n')
 
