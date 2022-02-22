@@ -5,5 +5,5 @@
 #' @author Danail Obreschkow
 #'
 #' @docType package
-#' @name gdgetry
+#' @name gadgetry
 NULL
