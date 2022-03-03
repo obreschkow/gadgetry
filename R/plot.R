@@ -288,11 +288,11 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
       if (is.null(fov)) {
         if (taper) {
           if (dat[[field]]$color.by.property) dat[[field]]$value=dat[[field]]$value[abs(x[,3])<=depth]
-          x = x[abs(x[,3])<=depth,x]
+          x = x[abs(x[,3])<=depth,]
           weight = kernel(x[,3],depth/2)
         } else {
           if (dat[[field]]$color.by.property) dat[[field]]$value=dat[[field]]$value[abs(x[,3])<=depth/2]
-          x = x[abs(x[,3])<=depth/2,x]
+          x = x[abs(x[,3])<=depth/2,]
         }
       } else {
         if (taper) {
