@@ -8,6 +8,7 @@
 #' @param fraction logical flag (default \code{FALSE}). If \code{TRUE}, the number \code{ti} is interpreted as fractional time between the two snapshots, ranging linearly between 0 and 1.
 #' @param afield optional acceleration field for leapfrog integration. This must be a function of a n-by-3 array representing n position vectors, which returns an n-by-3 array with the n acceleration vectors in the same length and time units as x and v.
 #' @param dt optional time step used for leapfrog integration; only used if \code{afield} given. The default is \code{dt=abs(t1-t0)/20}.
+#' @param comoving logical flag specifying if this is a comoving simulation
 #'
 #' @return snapshot object with interpolated particle properties.
 #'
@@ -15,16 +16,25 @@
 #'
 #' @export
 
-snapshotinterp = function(sn0,sn1,ti,fraction=FALSE,afield=NULL,dt=NULL) {
+snapshotinterp = function(sn0,sn1,ti,fraction=FALSE,afield=NULL,dt=NULL,comoving=FALSE) {
 
   # input checks - to make sure that all the parameters are given
 
   # fill in sn1 (extrapolation only)
   if (is.null(sn1)) sn1=sn0
 
+  # evaluate initial and final time in simulation units
+  if (comoving) {
+    a0 = sn0$Header$Time
+    a1 = sn1$Header$Time
+    if (abs(a0-1/(1+sn0$Header$Redshift))>1e-3) stop('in comoving simulations the time in the header must be the scale factor')
+    #xxx t0 = ...., t1 = ...
+  } else {
+    t0 = sn0$Header$Time
+    t1 = sn1$Header$Time
+  }
+
   # interpolate time
-  t0 = sn0$Header$Time
-  t1 = sn1$Header$Time
   if (fraction) ti = t0+(t1-t0)*ti
 
   if (ti==t0) {
@@ -83,6 +93,13 @@ snapshotinterp = function(sn0,sn1,ti,fraction=FALSE,afield=NULL,dt=NULL) {
       v0 = v0/sqrt(a0)
       v1 = v1/sqrt(a1)
     }
+    print(c(t0,t1,ti,a0))
+
+    deltax=vectornorm(x0-x1)
+    deltat=ti-t0
+    #xxx vguess<<-deltax/deltat
+    #vtrue<<-vectornorm((v0+v1)/2)
+    #stop()
 
     # interpolate positions & velocities
     p = particleinterp(x0=x0,x1=x1,t0=t0,t1=t1,ti=ti,v0=v0,v1=v1,afield=afield,dt=dt)
@@ -121,5 +138,3 @@ snapshotinterp = function(sn0,sn1,ti,fraction=FALSE,afield=NULL,dt=NULL) {
   return(sni)
 
 }
-
-

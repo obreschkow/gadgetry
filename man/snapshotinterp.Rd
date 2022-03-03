@@ -4,7 +4,15 @@
 \alias{snapshotinterp}
 \title{Interpolate between Gadget snapshots}
 \usage{
-snapshotinterp(sn0, sn1, ti, fraction = FALSE, afield = NULL, dt = NULL)
+snapshotinterp(
+  sn0,
+  sn1,
+  ti,
+  fraction = FALSE,
+  afield = NULL,
+  dt = NULL,
+  comoving = FALSE
+)
 }
 \arguments{
 \item{sn0}{gadget snapshot}
@@ -18,6 +26,8 @@ snapshotinterp(sn0, sn1, ti, fraction = FALSE, afield = NULL, dt = NULL)
 \item{afield}{optional acceleration field for leapfrog integration. This must be a function of a n-by-3 array representing n position vectors, which returns an n-by-3 array with the n acceleration vectors in the same length and time units as x and v.}
 
 \item{dt}{optional time step used for leapfrog integration; only used if \code{afield} given. The default is \code{dt=abs(t1-t0)/20}.}
+
+\item{comoving}{logical flag specifying if this is a comoving simulation}
 }
 \value{
 snapshot object with interpolated particle properties.

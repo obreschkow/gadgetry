@@ -19,8 +19,10 @@
 #' @param types vector specifying the particle types to be displayed. These numbers must correspond to the # in the sublists PartType#. If not given, all particle species are shown.
 #' @param center optional 3-vector specifying the coordinate at the center of the plot. The default is the geometric center (= center of mass, if all particle masses are equal).
 #' @param rotation either an integer (1-6), a 3-vector or a 3-by-3 matrix, specifying a rotation of the 3D particle positions. In case of an integer: 1=(x,y)-plane, 2=(y,z)-plane, 3=(x,z)-plane, 4=(qmax,qmin)-plane, 5=(qmax,qmid)-plane, 6=(qmid,qmin)-plane, where qmax/qmid/qmin are the eigenvectors of the particle-quadrupole, associated with the maximum/middle/minimum eigenvalues, respectively. If \code{rotation} is a vector, its direction specifies the rotation axis and its norm the rotation angle in radians in the positive geometric sense.
-#' @param width optional horizontal range of the image in simulation units. The default corresponds to the full range of particle positions.
-#' @param thickness optional thickness of the slice to be plotted in simulation units. If not given, all particles are shown.
+#' @param width optional horizontal range of the image in simulation units. The default corresponds to the full range of particle positions. If a field-of-view is specified by the parameter \code{fov}, the width of the view is superseded by the latter and the value of \code{width} is used to normalised the smoothing lengths.
+#' @param fov optional field-of-view in degrees. If non-specified an orthogonal projection is applied. If specified, a stereographic projection is applied, such that the width of the image shows exactly the number of degrees specified by \code{fov}.
+#' @param depth optional depth of the slice/field to be shown. In the case of an orthogonal projection (fov=NULL) all particles that lie within -depth/2 to +depth/2 are shown. In the case of a stereographic projection, all particles within a distance \code{depth} from the observer (placed at \code{center}) are shown.
+#' @param taper logical flag, which is only used if a finite \code{depth} is specified. If \code{taper} is TRUE, the particles are faded out towards the edges of the depth range, using a cubic spline kernel (Monaghan 1992), whose characteristic width corresponds to \code{depth}.
 #' @param aspect aspect ratio (= width/height).
 #' @param ngrid number of grid cells per side in the output image. If the image is not square ngrid is interpreted as the geometric mean between the horizontal and the vertical number of pixels, such that the total number of pixels remains about ngrid^2.
 #' @param fix.luminosity logical flag specifying whether the brightness should scale with the number of particles in the field of view. Set this to \code{FALSE} to avoid luminosity fluctuations in movies.
@@ -76,12 +78,15 @@
 #'
 #' @method plot snapshot
 #' @export
-plot.snapshot = function(x, center=NULL, rotation=1, thickness=NULL, width=NULL, aspect=1, ngrid=300, kde=TRUE, smoothing=NULL, types=NULL,
-                       sample.fraction=1, lum=1, gamma=1, shadows=1, fix.luminosity=FALSE, screen=TRUE, pngfile=NULL, pdffile=NULL,
-                       title=NULL, title.origin = NULL,
-                       arrows = TRUE, arrow.origin = NULL, arrow.length = NULL, arrow.lwd = 1.5,
-                       scale = TRUE, scale.origin = NULL, scale.length = NULL, scale.lwd = 1.5, length.unit = '',
-                       xlab = NULL, ylab = NULL, cex=1, text.offset = 0, text.col = 'white', ...) {
+plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth=NULL, taper=FALSE,
+                         aspect=1, ngrid=300, kde=TRUE, smoothing=NULL,
+                         types=NULL, sample.fraction=1,
+                         lum=1, gamma=1, shadows=1, fix.luminosity=FALSE,
+                         screen=TRUE, pngfile=NULL, pdffile=NULL,
+                         title=NULL, title.origin = NULL,
+                         arrows = TRUE, arrow.origin = NULL, arrow.length = NULL, arrow.lwd = 1.5,
+                         scale = TRUE, scale.origin = NULL, scale.length = NULL, scale.lwd = 1.5, length.unit = '',
+                         xlab = NULL, ylab = NULL, cex=1, text.offset = 0, text.col = 'white', ...) {
 
   dat = x; x = NULL
 
@@ -94,6 +99,12 @@ plot.snapshot = function(x, center=NULL, rotation=1, thickness=NULL, width=NULL,
       field = sprintf('PartType%d',type)
       if (!is.null(dat[[field]])) types=c(types,type)
     }
+  }
+
+  # handle fov
+  if (!is.null(fov)) {
+    if (fov>120) stop('fov cannot be larter than 120 degrees.')
+    if (fov<=0) stop('fov must be larger than 0.')
   }
 
   # check and pre-process input arguments ######################################
@@ -238,6 +249,16 @@ plot.snapshot = function(x, center=NULL, rotation=1, thickness=NULL, width=NULL,
     # get positions
     x = dat[[field]]$Coordinates
 
+    # subsampling
+    if (!is.null(sample.fraction)) {
+      if (sample.fraction<1) {
+        nsub = max(1,round(dim(x)[1]*sample.fraction)) # number of particles to select
+        sel = sample(dim(x)[1],nsub)
+        x = x[sel,]
+        if (dat[[field]]$color.by.property) dat[[field]]$value=dat[[field]]$value[sel]
+      }
+    }
+
     # compute total number of particles
     out[[field]]$n.tot = dim(x)[1]
     n.tot.all = n.tot.all+dim(x)[1]
@@ -248,42 +269,71 @@ plot.snapshot = function(x, center=NULL, rotation=1, thickness=NULL, width=NULL,
     # rotate coordinates (active rotation)
     x = t(rot%*%t(x))
 
-    # default selection
-    sel = seq(dim(x)[1])
+    # stereographic projection
+    if (!is.null(fov)) {
+      if (dat[[field]]$color.by.property) dat[[field]]$value=dat[[field]]$value[x[,3]>0]
+      stretch = width/2/tan(fov/180*pi/2)
+      x = x[x[,3]>0,]
+      distance = vectornorm(x)
+      x = x[,1:2]/x[,3]*stretch
+    }
 
     # sub-select slice thickness
-    if (!is.null(thickness)) {
-      sel = sel[abs(x[,3])<=thickness/2]
+    weight = NULL
+    kernel = function(x,h) {
+      q = x/h
+      ifelse(q<1,2/(3*h)*(1-3*q^2/2*(1-abs(q)/2)),pmax(0,1/(6*h)*(2-q)^3))
     }
-
-    # subsampling
-    if (!is.null(sample.fraction)) {
-      if (sample.fraction<1) {
-        nsub = max(1,round(length(sel)*sample.fraction)) # number of particles to select
-        sel = sample(sel,nsub)
+    if (!is.null(depth)) {
+      if (is.null(fov)) {
+        if (taper) {
+          if (dat[[field]]$color.by.property) dat[[field]]$value=dat[[field]]$value[abs(x[,3])<=depth]
+          x = x[abs(x[,3])<=depth,x]
+          weight = kernel(x[,3],depth/2)
+        } else {
+          if (dat[[field]]$color.by.property) dat[[field]]$value=dat[[field]]$value[abs(x[,3])<=depth/2]
+          x = x[abs(x[,3])<=depth/2,x]
+        }
+      } else {
+        if (taper) {
+          if (dat[[field]]$color.by.property) dat[[field]]$value=dat[[field]]$value[distance<=2*depth]
+          x = x[distance<=2*depth,]
+          distance = distance[distance<=2*depth]
+          weight = kernel(distance,depth)
+        } else {
+          if (dat[[field]]$color.by.property) dat[[field]]$value=dat[[field]]$value[distance<=depth]
+          x = x[distance<=depth,]
+        }
       }
     }
+    if (is.null(weight)) weight=rep(1,dim(x)[1])
 
     #  raster particle data
     if (dat[[field]]$smoothing==0) {
-      g = cooltools::griddata2(x[sel,1], x[sel,2], w=as.vector(dat[[field]]$value[sel]), xlim=xlim, ylim=ylim, n=c(nx,ny))
-      out[[field]]$density = g$n
-      if (dat[[field]]$color.by.property) out[[field]]$value = g$m/out[[field]]$density
+      g = cooltools::griddata2(x[,1], x[,2], w=weight, xlim=xlim, ylim=ylim, n=c(nx,ny))
+      out[[field]]$density = g$m
+      if (dat[[field]]$color.by.property) {
+        g = cooltools::griddata2(x[,1], x[,2], w=as.vector(dat[[field]]$value)*weight, xlim=xlim, ylim=ylim, n=c(nx,ny))
+        out[[field]]$value = g$m/out[[field]]$density
+      }
     } else {
       if (kde) {
-        g = cooltools::kde2(x[sel,1], x[sel,2], xlim=xlim, ylim=ylim, n=c(nx,ny), s=dat[[field]]$smoothing/8/dx, sd.max=dat[[field]]$smoothing*2/dx, cpp=TRUE)
+        g = cooltools::kde2(x[,1], x[,2], w=weight, xlim=xlim, ylim=ylim, n=c(nx,ny), s=dat[[field]]$smoothing/8/dx, sd.max=dat[[field]]$smoothing*2/dx, cpp=TRUE)
         out[[field]]$density = g$d
         if (dat[[field]]$color.by.property) {
-          g = cooltools::kde2(x[sel,1], x[sel,2], w=as.vector(dat[[field]]$value[sel]), xlim=xlim, ylim=ylim, n=c(nx,ny), s=dat[[field]]$smoothing/8/dx, sd.max=dat[[field]]$smoothing*2/dx, cpp=TRUE)
+          g = cooltools::kde2(x[,1], x[,2], w=as.vector(dat[[field]]$value)*weight, xlim=xlim, ylim=ylim, n=c(nx,ny), s=dat[[field]]$smoothing/8/dx, sd.max=dat[[field]]$smoothing*2/dx, cpp=TRUE)
           out[[field]]$value = g$d/out[[field]]$density
         }
       } else {
         if (!requireNamespace("EBImage", quietly=TRUE)) {
-          stop('Package EBImage is needed in function plot.gadget if kde=FALSE. Consider using kde=TRUE.')
+          stop('Package EBImage is needed in function plot.gadget if kde=FALSE. Consider setting kde=TRUE if you cannot install EBImage.')
         }
-        g = cooltools::griddata2(x[sel,1], x[sel,2], w=as.vector(dat[[field]]$value[sel]), xlim=xlim, ylim=ylim, n=c(nx,ny))
-        out[[field]]$density = EBImage::gblur(g$n, dat[[field]]$smoothing/dx)
-        if (dat[[field]]$color.by.property) out[[field]]$value = EBImage::gblur(g$m, dat[[field]]$smoothing/dx)/out[[field]]$density
+        g = cooltools::griddata2(x[,1], x[,2], w=weight, xlim=xlim, ylim=ylim, n=c(nx,ny))
+        out[[field]]$density = EBImage::gblur(g$m, dat[[field]]$smoothing/dx)
+        if (dat[[field]]$color.by.property) {
+          g = cooltools::griddata2(x[,1], x[,2], w=as.vector(dat[[field]]$value)*weight, xlim=xlim, ylim=ylim, n=c(nx,ny))
+          out[[field]]$value = EBImage::gblur(g$m, dat[[field]]$smoothing/dx)/out[[field]]$density
+        }
       }
     }
     out[[field]]$density[out[[field]]$density<0] = 0

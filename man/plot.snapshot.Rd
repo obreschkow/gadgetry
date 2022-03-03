@@ -8,8 +8,10 @@
   x,
   center = NULL,
   rotation = 1,
-  thickness = NULL,
   width = NULL,
+  fov = NULL,
+  depth = NULL,
+  taper = FALSE,
   aspect = 1,
   ngrid = 300,
   kde = TRUE,
@@ -57,9 +59,13 @@
 
 \item{rotation}{either an integer (1-6), a 3-vector or a 3-by-3 matrix, specifying a rotation of the 3D particle positions. In case of an integer: 1=(x,y)-plane, 2=(y,z)-plane, 3=(x,z)-plane, 4=(qmax,qmin)-plane, 5=(qmax,qmid)-plane, 6=(qmid,qmin)-plane, where qmax/qmid/qmin are the eigenvectors of the particle-quadrupole, associated with the maximum/middle/minimum eigenvalues, respectively. If \code{rotation} is a vector, its direction specifies the rotation axis and its norm the rotation angle in radians in the positive geometric sense.}
 
-\item{thickness}{optional thickness of the slice to be plotted in simulation units. If not given, all particles are shown.}
+\item{width}{optional horizontal range of the image in simulation units. The default corresponds to the full range of particle positions. If a field-of-view is specified by the parameter \code{fov}, the width of the view is superseded by the latter and the value of \code{width} is used to normalised the smoothing lengths.}
 
-\item{width}{optional horizontal range of the image in simulation units. The default corresponds to the full range of particle positions.}
+\item{fov}{optional field-of-view in degrees. If non-specified an orthogonal projection is applied. If specified, a stereographic projection is applied, such that the width of the image shows exactly the number of degrees specified by \code{fov}.}
+
+\item{depth}{optional depth of the slice/field to be shown. In the case of an orthogonal projection (fov=NULL) all particles that lie within -depth/2 to +depth/2 are shown. In the case of a stereographic projection, all particles within a distance \code{depth} from the observer (placed at \code{center}) are shown.}
+
+\item{taper}{logical flag, which is only used if a finite \code{depth} is specified. If \code{taper} is TRUE, the particles are faded out towards the edges of the depth range, using a cubic spline kernel (Monaghan 1992), whose characteristic width corresponds to \code{depth}.}
 
 \item{aspect}{aspect ratio (= width/height).}
 
