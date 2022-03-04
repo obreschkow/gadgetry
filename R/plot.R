@@ -289,7 +289,7 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
         if (taper) {
           if (dat[[field]]$color.by.property) dat[[field]]$value=dat[[field]]$value[abs(x[,3])<=depth]
           x = x[abs(x[,3])<=depth,]
-          weight = kernel(x[,3],depth/2)
+          weight = kernel(abs(x[,3]),depth/2)
         } else {
           if (dat[[field]]$color.by.property) dat[[field]]$value=dat[[field]]$value[abs(x[,3])<=depth/2]
           x = x[abs(x[,3])<=depth/2,]
@@ -318,7 +318,8 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
       }
     } else {
       if (kde) {
-        g = cooltools::kde2(x[,1], x[,2], w=weight, xlim=xlim, ylim=ylim, n=c(nx,ny), s=dat[[field]]$smoothing/8/dx, sd.max=dat[[field]]$smoothing*2/dx, cpp=TRUE)
+        g = kde2(x[,1], x[,2], w=weight, xlim=xlim, ylim=ylim, n=c(nx,ny), s=dat[[field]]$smoothing/8/dx,
+                 sd.max=dat[[field]]$smoothing*2/dx, cpp=TRUE, smoothw=!dat[[field]]$color.by.property)
         out[[field]]$density = g$d
         if (dat[[field]]$color.by.property) {
           g = cooltools::kde2(x[,1], x[,2], w=as.vector(dat[[field]]$value)*weight, xlim=xlim, ylim=ylim, n=c(nx,ny), s=dat[[field]]$smoothing/8/dx, sd.max=dat[[field]]$smoothing*2/dx, cpp=TRUE)
