@@ -319,7 +319,7 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
     } else {
       if (kde) {
         g = kde2(x[,1], x[,2], w=weight, xlim=xlim, ylim=ylim, n=c(nx,ny), s=dat[[field]]$smoothing/8/dx,
-                 sd.max=dat[[field]]$smoothing*2/dx, cpp=TRUE, smoothw=!dat[[field]]$color.by.property)
+                 sd.max=dat[[field]]$smoothing*2/dx, cpp=TRUE)
         out[[field]]$density = g$d
         if (dat[[field]]$color.by.property) {
           g = cooltools::kde2(x[,1], x[,2], w=as.vector(dat[[field]]$value)*weight, xlim=xlim, ylim=ylim, n=c(nx,ny), s=dat[[field]]$smoothing/8/dx, sd.max=dat[[field]]$smoothing*2/dx, cpp=TRUE)
