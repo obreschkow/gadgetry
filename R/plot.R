@@ -109,7 +109,6 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
 
   # check and pre-process input arguments ######################################
   if (min(types)<0) stop('particle types must be non-negative integers')
-  n.tot.all = 0
 
   for (type in types) {
 
@@ -231,7 +230,6 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
   if (is.null(smoothing)) smoothing = mean.length*0.005 # [length units of sim]
 
   # put particles on a grid
-  n.eff.all = 0
   for (type in types) {
 
     field = sprintf('PartType%d',type)
@@ -261,7 +259,6 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
 
     # compute total number of particles
     out[[field]]$n.tot = dim(x)[1]
-    n.tot.all = n.tot.all+dim(x)[1]
 
     # translate particles to custom center
     x = sweep(x, 2, center)
@@ -340,7 +337,6 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
     out[[field]]$density[out[[field]]$density<0] = 0
     if (dat[[field]]$color.by.property) out[[field]]$value[out[[field]]$value<0] = 0
     out[[field]]$n.eff = sum(out[[field]]$density)
-    n.eff.all = n.eff.all+out[[field]]$n.eff
   }
 
   # turn density and value matrices into RGB layers
@@ -355,7 +351,7 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
       layer = layer+1
 
       # convert density to brightness
-      linear.scaling = 0.1*dat[[field]]$lum*ngrid^2/max(1,ifelse(fix.luminosity,n.tot.all,n.eff.all)) # linear luminosity scaling factor
+      linear.scaling = 0.1*dat[[field]]$lum*ngrid^2/max(1,ifelse(fix.luminosity,out[[field]]$n.tot,out[[field]]$n.eff)) # linear luminosity scaling factor
       brightness = (linear.scaling*out[[field]]$density)^dat[[field]]$gamma
 
       # if no values provided use density as values

@@ -32,15 +32,24 @@ summary.snapshot = function(object, ...) {
       n = dim(object[[field]]$Coordinates)[1]
       ntot = ntot+n
       cat(sprintf('Particle Type %d:\n',type))
-      cat(sprintf('  Number of particles  = %d\n',n))
+      cat(sprintf('  Number of particles = %d\n',n))
       cat(sprintf('  Available properties = %s\n',paste(names(object[[field]]),collapse=', ')))
+      for (j in seq(names(object[[field]]))) {
+        subfield = names(object[[field]])[j]
+        x = object[[field]][[subfield]]
+        if (all(x==round(x))) {
+          cat(sprintf('  Range of %s = [%d,%d]\n',subfield,min(x),max(x)))
+        } else {
+          cat(sprintf('  Range of %s = [%.5e,%.5e]\n',subfield,min(x),max(x)))
+        }
+      }
       x = object[[field]]$Coordinates
       x0 = apply(x,2,mean)
-      cat(sprintf('  Geometric center     = (%.3e, %.3e, %.3e)\n',x0[1],x0[2],x0[3]))
+      cat(sprintf('  Geometric center = (%.3e, %.3e, %.3e)\n',x0[1],x0[2],x0[3]))
       r2 = rowSums(sweep(x,2,x0)^2)
-      cat(sprintf('  Radius               = %.3e (median), %.3e (max)\n',sqrt(stats::median(r2)),sqrt(max(r2))))
+      cat(sprintf('  Distance from centre = %.3e (median), %.3e (max)\n',sqrt(stats::median(r2)),sqrt(max(r2))))
     }
   }
-  cat(sprintf('Total num particles   = %d\n',ntot))
+  cat(sprintf('Total num particles = %d\n',ntot))
 
 }
