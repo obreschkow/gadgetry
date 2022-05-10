@@ -312,6 +312,7 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
       if (dat[[field]]$color.by.property) {
         g = cooltools::griddata2(x[,1], x[,2], w=as.vector(dat[[field]]$value)*weight, xlim=xlim, ylim=ylim, n=c(nx,ny))
         out[[field]]$value = g$m/out[[field]]$density
+        out[[field]]$value[is.na(out[[field]]$value)] = 0
       }
     } else {
       if (kde) {
@@ -321,6 +322,7 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
         if (dat[[field]]$color.by.property) {
           g = cooltools::kde2(x[,1], x[,2], w=as.vector(dat[[field]]$value)*weight, xlim=xlim, ylim=ylim, n=c(nx,ny), s=dat[[field]]$smoothing/8/dx, sd.max=dat[[field]]$smoothing*2/dx, cpp=TRUE)
           out[[field]]$value = g$d/out[[field]]$density
+          out[[field]]$value[is.na(out[[field]]$value)] = 0
         }
       } else {
         if (!requireNamespace("EBImage", quietly=TRUE)) {
@@ -331,6 +333,7 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
         if (dat[[field]]$color.by.property) {
           g = cooltools::griddata2(x[,1], x[,2], w=as.vector(dat[[field]]$value)*weight, xlim=xlim, ylim=ylim, n=c(nx,ny))
           out[[field]]$value = EBImage::gblur(g$m, dat[[field]]$smoothing/dx)/out[[field]]$density
+          out[[field]]$value[is.na(out[[field]]$value)] = 0
         }
       }
     }

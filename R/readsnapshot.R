@@ -96,33 +96,22 @@ readsnapshot = function(file, type='auto') {
   if (type=='bin') {
 
     # initialize
-    block.size = NA
-    block.start = function(target=NA) {
-      if (is.na(block.size)) {
-        block.size <<- readBin(data, 'integer', size=4)
-        if (target>2^23-1) target=NA
-        if (!is.na(target)) {
-          if (target!=block.size) {
-            close(data)
-            stop('block opening error')
-          }
-        }
-      } else {
-        close(data)
-        stop('block.start must be called after block.end')
-      }
-    }
-    block.end = function() {
-      if (is.na(block.size)) {
-        close(data)
-        stop('block.end must be called after block.start')
-      } else {
-        check = readBin(data, 'integer', size=4)
-        if (check!=block.size) {
+    block.start = function(target.block.size=NA) {
+      block.size = readBin(data, 'integer', size=4)
+      if (target.block.size>2^23-1) target.block.size=NA
+      if (!is.na(target.block.size)) {
+        if (target.block.size!=block.size) {
           close(data)
-          stop('block termination error')
+          stop(sprintf('Expected block size (%d) differs from actual block size (%d).',target.block.size,block.size))
         }
-        block.size <<- NA
+      }
+      return(block.size)
+    }
+    block.end = function(block.size) {
+      check = readBin(data, 'integer', size=4)
+      if (check!=block.size) {
+        close(data)
+        stop('Block termination error.')
       }
     }
 
@@ -131,7 +120,7 @@ readsnapshot = function(file, type='auto') {
     dat = list()
 
     # read header
-    block.start(256)
+    block.size = block.start(256)
     dat$Header = list()
     dat$Header$NumPart_ThisFile = readBin(data, 'integer', 6, size = 4)
     dat$Header$MassTable = readBin(data, 'numeric', 6, size = 8)
@@ -151,63 +140,63 @@ readsnapshot = function(file, type='auto') {
     dat$Header$NumPart_Total_HW = readBin(data, 'integer', 6, size = 4)
     dat$Header$Flag_Entropy_ICs = readBin(data, 'integer', 1, size = 4)
     dat$Header$unused = readBin(data, 'integer', 15, size = 4)
-    block.end()
+    block.end(block.size)
 
     # read positions
-    n = sum(dat$Header$Npart)
-    block.start(12*n)
+    n = sum(dat$Header$NumPart_ThisFile)
+    block.size = block.start(12*n)
     for (i in seq(0,5)) {
-      k = dat$Header$Npart[i+1]
+      k = dat$Header$NumPart_ThisFile[i+1]
       if (k>0) {
         field = sprintf('PartType%d',i)
         dat[[field]] = list()
         dat[[field]]$Coordinates = t(array(readBin(data, 'numeric', 3*k, size = 4),c(3,k)))
       }
     }
-    block.end()
+    block.end(block.size)
 
     # read velocities
-    block.start(12*n)
+    block.size = block.start(12*n)
     for (i in seq(0,5)) {
-      k = dat$Header$Npart[i+1]
+      k = dat$Header$NumPart_ThisFile[i+1]
       if (k>0) {
         field = sprintf('PartType%d',i)
         dat[[field]]$Velocities = t(array(readBin(data, 'numeric', 3*k, size = 4),c(3,k)))
       }
     }
-    block.end()
+    block.end(block.size)
 
     # read IDs
-    n = sum(dat$Header$Npart)
-    block.start(4*n)
+    n = sum(dat$Header$NumPart_ThisFile)
+    block.size = block.start(4*n)
     for (i in seq(0,5)) {
-      k = dat$Header$Npart[i+1]
+      k = dat$Header$NumPart_ThisFile[i+1]
       if (k>0) {
         field = sprintf('PartType%d',i)
         dat[[field]]$ParticleIDs = readBin(data, 'integer', k, size = 4)
       }
     }
-    block.end()
+    block.end(block.size)
 
     # read masses
-    nmass = dat$Header$Npart[dat$Header$Massarr==0]
+    nmass = dat$Header$NumPart_ThisFile[dat$Header$MassTable==0]
     if (sum(nmass)>0) {
-      block.start(4*sum(nmass))
+      block.size = block.start(4*sum(nmass))
       for (i in seq(0,5)) {
         if (nmass[i+1]>0) {
           field = sprintf('PartType%d',i)
           dat[[field]]$Masses = readBin(data, 'numeric', nmass[i+1], size = 4)
         }
       }
-      block.end()
+      block.end(block.size)
     }
 
     # read internal energies
-    ngas = dat$Header$Npart[1]
+    ngas = dat$Header$NumPart_ThisFile[1]
     if (ngas >0) {
-      block.start(4*ngas)
+      block.size = block.start(4*ngas)
       dat$PartType0$InternalEnergy = readBin(data, 'numeric', ngas, size = 4)
-      block.end()
+      block.end(block.size)
     }
 
     # close file
