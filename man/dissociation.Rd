@@ -7,9 +7,9 @@
 dissociation(x, y)
 }
 \arguments{
-\item{x}{n-by-3 matrix containing the first set of points (e.g. dark matter)}
+\item{x}{n-by-3 matrix containing the first set of points (e.g. dark matter). It can also be a n-by-2 matrix, if the line-of-sight coordinate is missing (as in observations). In this case, a correction is applied to estimate the 3D dissociation indices.}
 
-\item{y}{m-by-3 matrix containing the second set of points (e.g. gas)}
+\item{y}{m-by-3 matrix containing the second set of points (e.g. gas). It can also be a m-by-2 matrix, if the line-of-sight coordinate is missing (as in observations). In this case, a correction is applied to estimate the 3D dissociation indices.}
 }
 \value{
 list of dissociation indices and moments
@@ -23,8 +23,8 @@ x.gas = cooltools::runif3(4e3)
 x.cdm = t(cbind(t(cooltools::runif3(5e3))-c(1,0,0),t(cooltools::runif3(5e3))+c(1,0,0)))
 cat(sprintf('Primary dissociation index = \%.2f\n',dissociation(x.cdm,x.gas)$D2))
 \dontrun{
-dat = list(PartType0 = list(Coordinates=x.gas), PartType1 = list(Coordinates=x.cdm))
-plot(dat)
+sn = snapshot(list(x.gas,x.cdm))
+plot(sn)
 }
 
 }
