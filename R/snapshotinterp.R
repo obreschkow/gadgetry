@@ -157,7 +157,6 @@ snapshotinterp = function(sn0,sn1,t0=0,t1=1,ti=0.5,
           sni[[field]]$Masses = (1-f)*m0[n+seq(ntype)]+f*m1[n+seq(ntype)]
         }
         if ('InternalEnergy'%in%fieldnames) {
-          print('here')
           sni[[field]]$InternalEnergy = (1-f)*u0[n+seq(ntype)]+f*u1[n+seq(ntype)]
         }
         n = n+ntype
