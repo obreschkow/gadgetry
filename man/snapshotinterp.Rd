@@ -39,7 +39,7 @@ snapshotinterp(
 \item{dt}{optional time step used for leapfrog integration; only used if \code{afield} given. The default is \code{dt=abs(t1-t0)/20}.}
 }
 \value{
-snapshot object with interpolated particle properties.
+snapshot object with interpolated particle properties. The interpolation time \code{ti} is returned in 'Header$Time'.
 }
 \description{
 Interpolate/extrapolate between adjacent Gadget snapshots, building on the interpolation routine \code{\link{particleinterp}}. The ordering of the particles follows that of the nearest snapshot, and if some particles change their species between the two snapshots, the interpolated snapshot uses the species of the nearest snapshot.

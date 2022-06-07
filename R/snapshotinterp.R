@@ -13,7 +13,7 @@
 #' @param afield optional acceleration field for leapfrog integration. This must be a function of a n-by-3 array representing n position vectors, which returns an n-by-3 array with the n acceleration vectors in the same length and time units as the snapshot coordinates and t0/t1/ti times.
 #' @param dt optional time step used for leapfrog integration; only used if \code{afield} given. The default is \code{dt=abs(t1-t0)/20}.
 #'
-#' @return snapshot object with interpolated particle properties.
+#' @return snapshot object with interpolated particle properties. The interpolation time \code{ti} is returned in 'Header$Time'.
 #'
 #' @author Danail Obreschkow
 #'
@@ -116,6 +116,14 @@ snapshotinterp = function(sn0,sn1,t0=0,t1=1,ti=0.5,
         u1 = allpart(sn1,'InternalEnergy')
       }
     }
+    if ('Masses'%in%fieldnames) {
+      m0[is.na(m0)] = m1[is.na(m0)]
+      m1[is.na(m1)] = m0[is.na(m1)]
+    }
+    if ('InternalEnergy'%in%fieldnames) {
+      u0[is.na(u0)] = u1[is.na(u0)]
+      u1[is.na(u1)] = u0[is.na(u1)]
+    }
 
     # interpolate positions & velocities
     if (usevelocities) {
@@ -158,6 +166,8 @@ snapshotinterp = function(sn0,sn1,t0=0,t1=1,ti=0.5,
     if (n!=dim(p$x)[1]) stop('unidentified interpolation indexing error')
 
   }
+
+  sni$Header$Time = ti
 
   class(sni) = "snapshot"
   return(sni)
