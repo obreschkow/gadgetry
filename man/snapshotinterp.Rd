@@ -7,33 +7,42 @@
 snapshotinterp(
   sn0,
   sn1,
-  ti,
-  fraction = FALSE,
+  t0 = 0,
+  t1 = 1,
+  ti = 0.5,
+  usevelocities = TRUE,
+  v0factor = 1,
+  v1factor = NULL,
   afield = NULL,
-  dt = NULL,
-  comoving = FALSE
+  dt = NULL
 )
 }
 \arguments{
-\item{sn0}{gadget snapshot}
+\item{sn0}{first gadget snapshot}
 
-\item{sn1}{optional second gadget snapshot}
+\item{sn1}{second gadget snapshot}
 
-\item{ti}{time of the interpolated/extrapolated output positions and velocities}
+\item{t0}{time of first snapshot}
 
-\item{fraction}{logical flag (default \code{FALSE}). If \code{TRUE}, the number \code{ti} is interpreted as fractional time between the two snapshots, ranging linearly between 0 and 1.}
+\item{t1}{time of second snapshot}
 
-\item{afield}{optional acceleration field for leapfrog integration. This must be a function of a n-by-3 array representing n position vectors, which returns an n-by-3 array with the n acceleration vectors in the same length and time units as x and v.}
+\item{ti}{time of interpolated output snapshot. Values outside the range [t0,t1] lead to an extrapolation.}
+
+\item{usevelocities}{logical flag. If TRUE, velocities are used to improve the interpolation of positions.}
+
+\item{v0factor}{factor to be applied to velocities of sn0 to convert to length/time units of the snapshot coordinates and the t0/t1/ti times.}
+
+\item{v1factor}{factor to be applied to velocities of sn1 to convert to length/time units of the snapshot coordinates and the t0/t1/ti times. If not provided, this will be set equal to \code{v1factor}.}
+
+\item{afield}{optional acceleration field for leapfrog integration. This must be a function of a n-by-3 array representing n position vectors, which returns an n-by-3 array with the n acceleration vectors in the same length and time units as the snapshot coordinates and t0/t1/ti times.}
 
 \item{dt}{optional time step used for leapfrog integration; only used if \code{afield} given. The default is \code{dt=abs(t1-t0)/20}.}
-
-\item{comoving}{logical flag specifying if this is a comoving simulation}
 }
 \value{
 snapshot object with interpolated particle properties.
 }
 \description{
-Interpolate/extrapolate between adjacent Gadget snapshots, building on the interpolation routine \code{\link{particleinterp}}. Note that only positions and velocities are interpolated, while all other properties are set equal to the nearest snapshot in time. The ordering of the particles also follows that of the nearest snapshot, and if some particles change their species between the two snapshots, the interpolated snapshot uses the species of the nearest snapshot.
+Interpolate/extrapolate between adjacent Gadget snapshots, building on the interpolation routine \code{\link{particleinterp}}. The ordering of the particles follows that of the nearest snapshot, and if some particles change their species between the two snapshots, the interpolated snapshot uses the species of the nearest snapshot.
 }
 \author{
 Danail Obreschkow

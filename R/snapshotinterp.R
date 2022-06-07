@@ -1,14 +1,17 @@
 #' Interpolate between Gadget snapshots
 #'
-#' @description Interpolate/extrapolate between adjacent Gadget snapshots, building on the interpolation routine \code{\link{particleinterp}}. Note that only positions and velocities are interpolated, while all other properties are set equal to the nearest snapshot in time. The ordering of the particles also follows that of the nearest snapshot, and if some particles change their species between the two snapshots, the interpolated snapshot uses the species of the nearest snapshot.
+#' @description Interpolate/extrapolate between adjacent Gadget snapshots, building on the interpolation routine \code{\link{particleinterp}}. The ordering of the particles follows that of the nearest snapshot, and if some particles change their species between the two snapshots, the interpolated snapshot uses the species of the nearest snapshot.
 #'
-#' @param sn0 gadget snapshot
-#' @param sn1 optional second gadget snapshot
-#' @param ti time of the interpolated/extrapolated output positions and velocities
-#' @param fraction logical flag (default \code{FALSE}). If \code{TRUE}, the number \code{ti} is interpreted as fractional time between the two snapshots, ranging linearly between 0 and 1.
-#' @param afield optional acceleration field for leapfrog integration. This must be a function of a n-by-3 array representing n position vectors, which returns an n-by-3 array with the n acceleration vectors in the same length and time units as x and v.
+#' @param sn0 first gadget snapshot
+#' @param sn1 second gadget snapshot
+#' @param t0 time of first snapshot
+#' @param t1 time of second snapshot
+#' @param ti time of interpolated output snapshot. Values outside the range [t0,t1] lead to an extrapolation.
+#' @param usevelocities logical flag. If TRUE, velocities are used to improve the interpolation of positions.
+#' @param v0factor factor to be applied to velocities of sn0 to convert to length/time units of the snapshot coordinates and the t0/t1/ti times.
+#' @param v1factor factor to be applied to velocities of sn1 to convert to length/time units of the snapshot coordinates and the t0/t1/ti times. If not provided, this will be set equal to \code{v1factor}.
+#' @param afield optional acceleration field for leapfrog integration. This must be a function of a n-by-3 array representing n position vectors, which returns an n-by-3 array with the n acceleration vectors in the same length and time units as the snapshot coordinates and t0/t1/ti times.
 #' @param dt optional time step used for leapfrog integration; only used if \code{afield} given. The default is \code{dt=abs(t1-t0)/20}.
-#' @param comoving logical flag specifying if this is a comoving simulation
 #'
 #' @return snapshot object with interpolated particle properties.
 #'
@@ -16,26 +19,11 @@
 #'
 #' @export
 
-snapshotinterp = function(sn0,sn1,ti,fraction=FALSE,afield=NULL,dt=NULL,comoving=FALSE) {
+snapshotinterp = function(sn0,sn1,t0=0,t1=1,ti=0.5,
+                          usevelocities=TRUE,v0factor=1,v1factor=NULL,
+                          afield=NULL,dt=NULL) {
 
-  # input checks - to make sure that all the parameters are given
-
-  # fill in sn1 (extrapolation only)
-  if (is.null(sn1)) sn1=sn0
-
-  # evaluate initial and final time in simulation units
-  if (comoving) {
-    a0 = sn0$Header$Time
-    a1 = sn1$Header$Time
-    if (abs(a0-1/(1+sn0$Header$Redshift))>1e-3) stop('in comoving simulations the time in the header must be the scale factor')
-    #xxx t0 = ...., t1 = ...
-  } else {
-    t0 = sn0$Header$Time
-    t1 = sn1$Header$Time
-  }
-
-  # interpolate time
-  if (fraction) ti = t0+(t1-t0)*ti
+  if (is.null(v1factor)) v1factor=v0factor
 
   if (ti==t0) {
 
@@ -71,44 +59,74 @@ snapshotinterp = function(sn0,sn1,ti,fraction=FALSE,afield=NULL,dt=NULL,comoving
     indexslave = sort.int(idslave,index.return=TRUE)$ix[k]
     if (any(idmaster!=idslave[indexslave])) stop('the two snapshots do not contain the same particle IDs')
 
+    # determine extra fields
+    fieldnames = c()
+    for (species in seq(0,10)) {
+      field = sprintf('PartType%d',species)
+      fieldnames = c(fieldnames,names(sn0[[field]]),names(sn1[[field]]))
+    }
+    fieldnames = unique(fieldnames)
+    fieldnames = fieldnames[!fieldnames%in%c('Coordinates','Velocities','ParticleIDs')]
+
+    # complete missing masses and internal energies
+    if ('Masses'%in%fieldnames) {
+      for (species in seq(0,10)) {
+        field = sprintf('PartType%d',species)
+        if (!is.null(sni[[field]])) {
+          if (is.null(sn0[[field]]$Masses)) sn0[[field]]$Masses=rep(NA,dim(sn0[[field]]$Coordinates)[1])
+          if (is.null(sn1[[field]]$Masses)) sn1[[field]]$Masses=rep(NA,dim(sn1[[field]]$Coordinates)[1])
+        }
+      }
+    }
+    if ('InternalEnergy'%in%fieldnames) {
+      for (species in seq(0,10)) {
+        field = sprintf('PartType%d',species)
+        if (!is.null(sni[[field]])) {
+          if (is.null(sn0[[field]]$InternalEnergy)) sn0[[field]]$InternalEnergy=rep(NA,dim(sn0[[field]]$Coordinates)[1])
+          if (is.null(sn1[[field]]$InternalEnergy)) sn1[[field]]$InternalEnergy=rep(NA,dim(sn1[[field]]$Coordinates)[1])
+        }
+      }
+    }
+
     # extract ordered positions and velocities
     if (master==0) {
       x0 = allpart(sn0,'Coordinates')
       x1 = allpart(sn1,'Coordinates')[indexslave,]
-      v0 = allpart(sn0,'Velocities')
-      v1 = allpart(sn1,'Velocities')[indexslave,]
+      v0 = allpart(sn0,'Velocities')*v0factor
+      v1 = allpart(sn1,'Velocities')[indexslave,]*v1factor
+      if ('Masses'%in%fieldnames) {
+        m0 = allpart(sn0,'Masses')
+        m1 = allpart(sn1,'Masses')[indexslave]
+      }
+      if ('InternalEnergy'%in%fieldnames) {
+        u0 = allpart(sn0,'InternalEnergy')
+        u1 = allpart(sn1,'InternalEnergy')[indexslave]
+      }
     } else {
       x0 = allpart(sn0,'Coordinates')[indexslave,]
       x1 = allpart(sn1,'Coordinates')
-      v0 = allpart(sn0,'Velocities')[indexslave,]
-      v1 = allpart(sn1,'Velocities')
+      v0 = allpart(sn0,'Velocities')[indexslave,]*v0factor
+      v1 = allpart(sn1,'Velocities')*v1factor
+      if ('Masses'%in%fieldnames) {
+        m0 = allpart(sn0,'Masses')[indexslave]
+        m1 = allpart(sn1,'Masses')
+      }
+      if ('InternalEnergy'%in%fieldnames) {
+        u0 = allpart(sn0,'InternalEnergy')[indexslave]
+        u1 = allpart(sn1,'InternalEnergy')
+      }
     }
-
-    # rescale velocities
-    if (!is.null(sn0$Header$Redshift)) {
-      # determine scale factors
-      a0 = 1/(1+sn0$Header$Redshift)
-      a1 = 1/(1+sn1$Header$Redshift)
-      # convert from computation units to the internal *comoving* length/time units of the simulation
-      v0 = v0/sqrt(a0)
-      v1 = v1/sqrt(a1)
-    }
-    print(c(t0,t1,ti,a0))
-
-    deltax=vectornorm(x0-x1)
-    deltat=ti-t0
-    #xxx vguess<<-deltax/deltat
-    #vtrue<<-vectornorm((v0+v1)/2)
-    #stop()
 
     # interpolate positions & velocities
-    p = particleinterp(x0=x0,x1=x1,t0=t0,t1=t1,ti=ti,v0=v0,v1=v1,afield=afield,dt=dt)
-
-    if (!is.null(sn0$Header$Redshift)) {
-      f = (ti-t0)/(t1-t0)
-      ai = a0*(1-f)+a1*f
-      p$v = p$v*sqrt(ai) # convert interpolated velocities back to computational units
+    if (usevelocities) {
+      p = particleinterp(x0=x0,x1=x1,t0=t0,t1=t1,ti=ti,v0=v0,v1=v1,afield=afield,dt=dt)
+    } else {
+      p = particleinterp(x0=x0,x1=x1,t0=t0,t1=t1,ti=ti,afield=afield,dt=dt)
     }
+
+    # scale velocities back to original units
+    vifactor = (1-f)*v0factor+f*v1factor
+    p$v = p$v/vifactor
 
     # replace positions and velocities for interpolated values
     n = 0
@@ -127,6 +145,13 @@ snapshotinterp = function(sn0,sn1,ti,fraction=FALSE,afield=NULL,dt=NULL,comoving
         }
         sni[[field]]$Coordinates = p$x[n+seq(ntype),]
         sni[[field]]$Velocities = p$v[n+seq(ntype),]
+        if ('Masses'%in%fieldnames) {
+          sni[[field]]$Masses = (1-f)*m0[n+seq(ntype)]+f*m1[n+seq(ntype)]
+        }
+        if ('InternalEnergy'%in%fieldnames) {
+          print('here')
+          sni[[field]]$InternalEnergy = (1-f)*u0[n+seq(ntype)]+f*u1[n+seq(ntype)]
+        }
         n = n+ntype
       }
     }
