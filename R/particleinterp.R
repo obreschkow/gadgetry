@@ -87,12 +87,18 @@ particleinterp = function(x0,x1,t0,t1,ti,v0=NULL,v1=NULL,afield=NULL,dt=NULL) {
   st = ti-t0
   ht = t1-t0
 
+  if (t0>t1) stop('t0 must not be larger than t1')
+
+  if (is.null(v0)!=is.null(v1)) stop('either both v0 and v1 must be given or none of them')
+
   if (is.null(afield)) {
 
     if (!is.null(dt)) stop('argument dt is only used if afield given.')
 
-    if (is.null(v0)) v0 = (x1-x0)/ht
-    if (is.null(v1)) v1 = (x1-x0)/ht
+    if (is.null(v0)) {
+      v0 = (x1-x0)/ht
+      v1 = (x1-x0)/ht
+    }
 
     if (ti<=t0) {
 
@@ -168,4 +174,59 @@ particleinterp = function(x0,x1,t0,t1,ti,v0=NULL,v1=NULL,afield=NULL,dt=NULL) {
 
 }
 
+
+# @param spherical logical flag (developer stage). If TRUE, the interpolation is performed in spherical coordinates. This can be useful for objects with a central potential, such as single galaxies. Note that this option only works with 3-dimensional data and if \code{afield} is not provided.
+
+# if (spherical) {
+#
+#   if (is.null(v0)) {
+#     x0 = cooltools::car2sph(x0)
+#     x1 = cooltools::car2sph(x1)
+#     s = x0[,3]-x1[,3]>pi
+#     x0[s,] = (x0[s,]+pi)%%(2*pi)-pi
+#     x1[s,] = (x1[s,]+pi)%%(2*pi)-pi
+#     v0 = (x1-x0)/ht
+#     v1 = (x1-x0)/ht
+#   } else {
+#     dt = ht*1e-6
+#     x0d = cooltools::car2sph(x0+v0*dt)
+#     x1d = cooltools::car2sph(x1+v1*dt)
+#     x0 = cooltools::car2sph(x0)
+#     x1 = cooltools::car2sph(x1)
+#     v0 = (x0d-x0)/dt
+#     v1 = (x1d-x1)/dt
+#     # correct azimuth wrapping
+#     dphi1 = x1[,3]-x0[,3]
+#     dphi2 = (v1[,3]+v0[,3])*ht/2
+#     nrotations = round((dphi2-dphi1)/(2*pi)) # estimated number of rotations to be added to x1
+#     x1[,3] = x1[,3]+nrotations*2*pi
+#   }
+#
+# }
+
+# if (spherical) {
+#   x = cooltools::sph2car(x)
+#   v = cooltools::sph2car(v)
+# }
+
+# # analytical model of continuous orbit in a 1D harmonic oscillator
+# x = function(t) cbind(cos(t),sin(t),0)
+# v = function(t) cbind(-sin(t),cos(t),0)*10
+#
+# t0 = -0.3
+# t1 = 0.3
+#
+# cooltools::nplot(xlim=c(-1.1,1.1),ylim=c(-1.1,1.1),asp=1)
+#
+# points(x(t0),col='red',cex=1.5,pch=16)
+# points(x(t1),col='blue',cex=1.5,pch=16)
+# lines(cos(seq(0,2*pi,length=361)),sin(seq(0,2*pi,length=361)))
+#
+# # interpolation/extrapolation
+# for (ti in seq(t0,t1,length=100)) {
+#   p = particleinterp(x(t0),x(t1),t0,t1,ti)
+#   points(p$x,col='orange')
+#   p = particleinterp(x(t0),x(t1),t0,t1,ti,v(t0),v(t1),spherical = T)
+#   points(p$x,col='green')
+# }
 

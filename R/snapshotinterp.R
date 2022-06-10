@@ -36,7 +36,7 @@ snapshotinterp = function(sn0,sn1,t0=0,t1=1,ti=0.5,
   } else {
 
     # copy properties from nearest snapshot
-    f = (ti-t0)/(t1-t0)
+    f = max(0,min(1,(ti-t0)/(t1-t0)))
     if (f<0.5) {
       master = 0
       slave = 1
@@ -129,7 +129,7 @@ snapshotinterp = function(sn0,sn1,t0=0,t1=1,ti=0.5,
     if (usevelocities) {
       p = particleinterp(x0=x0,x1=x1,t0=t0,t1=t1,ti=ti,v0=v0,v1=v1,afield=afield,dt=dt)
     } else {
-      p = particleinterp(x0=x0,x1=x1,t0=t0,t1=t1,ti=ti,afield=afield,dt=dt)
+      p = particleinterp(x0=x0,x1=x1,t0=t0,t1=t1,ti=ti)
     }
 
     # scale velocities back to original units
@@ -157,7 +157,7 @@ snapshotinterp = function(sn0,sn1,t0=0,t1=1,ti=0.5,
           sni[[field]]$Masses = (1-f)*m0[n+seq(ntype)]+f*m1[n+seq(ntype)]
         }
         if ('InternalEnergy'%in%fieldnames) {
-          sni[[field]]$InternalEnergy = (1-f)*u0[n+seq(ntype)]+f*u1[n+seq(ntype)]
+          sni[[field]]$InternalEnergy = exp((1-f)*log(u0[n+seq(ntype)])+f*log(u1[n+seq(ntype)]))
         }
         n = n+ntype
       }
