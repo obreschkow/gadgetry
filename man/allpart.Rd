@@ -4,10 +4,10 @@
 \alias{allpart}
 \title{Concatenate identical properties of different Gadget particle species}
 \usage{
-allpart(dat, field = "Coordinates", species = seq(0, 5))
+allpart(snapshot, field = "Coordinates", species = seq(0, 5))
 }
 \arguments{
-\item{dat}{an object of class 'snapshot', which contains a Gadget simulation snapshot. Such objects are created, for example, using \code{\link{readsnapshot}} or \code{\link{snapshot}}. Gadget data type, which must contain at least one sublist PartType# (with #=0,1,...). Each sublist PartType# represents one type of particle (e.g. gas, stars, dark matter) and must contain at least the particles coordinates in an N-by-3 matrix \code{Coordinates}. Other optional elements of PartType# are:\cr}
+\item{snapshot}{an object of class 'snapshot' (or an analogously structured list), which contains a Gadget simulation snapshot. Such objects are created, for example, using \code{\link{readsnapshot}} or \code{\link{snapshot}}. Gadget data type, which must contain at least one sublist PartType# (with #=0,1,...). Each sublist PartType# represents one type of particle (e.g. gas, stars, dark matter) and must contain at least the particles coordinates in an N-by-3 matrix \code{Coordinates}. Other optional elements of PartType# are:\cr}
 
 \item{field}{character specifying particle property to concatenate.}
 

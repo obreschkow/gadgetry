@@ -1,13 +1,13 @@
 #' Visualise one or several 3D point sets
 #'
-#' @importFrom cooltools lim griddata2 kde2 quadrupole rotation3 vectornorm nplot rasterflip lightness
+#' @importFrom cooltools lim griddata kde2 quadrupole rotation3 vectornorm nplot rasterflip lightness
 #' @importFrom png writePNG
 #' @importFrom grDevices pdf dev.off col2rgb rainbow
 #' @importFrom graphics axis lines par rasterImage rect text arrows
 #'
 #' @description Produces a raster image visualizing particle positions in 3D N-body/SPH data.
 #'
-#' @param x Object of class 'snapshot'. It must contain at least one sublist PartType# (with #=0,1,...). Each sublist PartType# represents one type of particle (e.g. gas, stars, dark matter) and must contain at least the particles coordinates in an N-by-3 matrix \code{Coordinates}. Other optional elements of PartType# are:\cr
+#' @param x object of class 'snapshot'. It must contain at least one sublist PartType# (with #=0,1,...). Each sublist PartType# represents one type of particle (e.g. gas, stars, dark matter) and must contain at least the particles coordinates in an N-by-3 matrix \code{Coordinates}. Other optional elements of PartType# are:\cr
 #' \code{col} = color used to display this particle type. This can be a single color or a vector of colors. If a single color is provided, a range of brightness of that color is produced automatically .\cr
 #' \code{value} = optional N-vector of values, one for each particle, which define the position on the color scale. If not given, particles are colored according to their projected density.\cr
 #' \code{valrange} = optional 2-vector specifying the values corresponding to the limits of the color scale. Only used if the N-vector \code{value} is given.\cr
@@ -88,7 +88,7 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
                          scale = TRUE, scale.origin = NULL, scale.length = NULL, scale.lwd = 1.5, length.unit = '',
                          xlab = NULL, ylab = NULL, cex=1, text.offset = 0, text.col = 'white', ...) {
 
-  dat = x; x = NULL
+  snapshot = x; x = NULL # needed, because the first argument of the generic plot function is "x"
 
   out = list()
 
@@ -97,7 +97,7 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
     types = c()
     for (type in seq(0,20)) {
       field = sprintf('PartType%d',type)
-      if (!is.null(dat[[field]])) types=c(types,type)
+      if (!is.null(snapshot[[field]])) types=c(types,type)
     }
   }
 
@@ -116,43 +116,43 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
     out[[field]] = list()
 
     # handle brightness parameters
-    if (is.null(dat[[field]]$lum)) dat[[field]]$lum=lum
-    if (is.null(dat[[field]]$gamma)) dat[[field]]$gamma=gamma
+    if (is.null(snapshot[[field]]$lum)) snapshot[[field]]$lum=lum
+    if (is.null(snapshot[[field]]$gamma)) snapshot[[field]]$gamma=gamma
 
     # handle values
-    dat[[field]]$color.by.property = !is.null(dat[[field]]$value)
-    if (dat[[field]]$color.by.property) {
-      if (is.null(dat[[field]]$valrange)) dat[[field]]$valrange=range(dat[[field]]$value)
+    snapshot[[field]]$color.by.property = !is.null(snapshot[[field]]$value)
+    if (snapshot[[field]]$color.by.property) {
+      if (is.null(snapshot[[field]]$valrange)) snapshot[[field]]$valrange=range(snapshot[[field]]$value)
     } else {
-      dat[[field]]$valrange = c(0,1)
+      snapshot[[field]]$valrange = c(0,1)
     }
-    out[[field]]$valrange = dat[[field]]$valrange
+    out[[field]]$valrange = snapshot[[field]]$valrange
 
     # determine particle color
-    if (is.null(dat[[field]][['col']])) {
-      if (dat[[field]]$color.by.property) {
-        dat[[field]][['col']] = grDevices::rainbow(256,end=5/6)
+    if (is.null(snapshot[[field]][['col']])) {
+      if (snapshot[[field]]$color.by.property) {
+        snapshot[[field]][['col']] = grDevices::rainbow(256,end=5/6)
       } else {
         if (type<=5) {
-          dat[[field]][['col']] = c('#ff0010', '#1515ff', 'white', 'yellow', 'orange', 'purple')[type+1]
+          snapshot[[field]][['col']] = c('#ff0010', '#1515ff', 'white', 'yellow', 'orange', 'purple')[type+1]
         } else {
-          dat[[field]][['col']] = 'white'
+          snapshot[[field]][['col']] = 'white'
         }
       }
     }
-    out[[field]][['col']] = dat[[field]][['col']]
+    out[[field]][['col']] = snapshot[[field]][['col']]
 
-    if (length(dat[[field]]$col)==1) {
-      col = grDevices::col2rgb(dat[[field]]$col)/255
-      dat[[field]]$colrgb = cbind(col%*%seq(0,1,length=5000),c(0,0,0))
+    if (length(snapshot[[field]]$col)==1) {
+      col = grDevices::col2rgb(snapshot[[field]]$col)/255
+      snapshot[[field]]$colrgb = cbind(col%*%seq(0,1,length=5000),c(0,0,0))
     } else {
-      dat[[field]]$colrgb = cbind(grDevices::col2rgb(dat[[field]]$col)/255,c(0,0,0))
+      snapshot[[field]]$colrgb = cbind(grDevices::col2rgb(snapshot[[field]]$col)/255,c(0,0,0))
     }
 
   }
   # end input handling #########################################################
 
-  x = allpart(dat,'Coordinates')
+  x = allpart(snapshot,'Coordinates')
 
   # determine geometric center
   if (is.null(center)) {
@@ -235,17 +235,17 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
     field = sprintf('PartType%d',type)
 
     # specify smoothing kernel
-    if (is.null(dat[[field]]$smoothing)) dat[[field]]$smoothing = smoothing
-    if (is.null(dat[[field]]$kde)) {
+    if (is.null(snapshot[[field]]$smoothing)) snapshot[[field]]$smoothing = smoothing
+    if (is.null(snapshot[[field]]$kde)) {
       kde = kde
     } else {
-      kde = dat[[field]]$kde
+      kde = snapshot[[field]]$kde
     }
-    out[[field]]$smoothing = dat[[field]]$smoothing
-    out[[field]]$kde = dat[[field]]$kde
+    out[[field]]$smoothing = snapshot[[field]]$smoothing
+    out[[field]]$kde = snapshot[[field]]$kde
 
     # get positions
-    x = dat[[field]]$Coordinates
+    x = snapshot[[field]]$Coordinates
 
     # subsampling
     if (!is.null(sample.fraction)) {
@@ -253,7 +253,7 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
         nsub = max(1,round(dim(x)[1]*sample.fraction)) # number of particles to select
         sel = sample(dim(x)[1],nsub)
         x = x[sel,]
-        if (dat[[field]]$color.by.property) dat[[field]]$value=dat[[field]]$value[sel]
+        if (snapshot[[field]]$color.by.property) snapshot[[field]]$value=snapshot[[field]]$value[sel]
       }
     }
 
@@ -268,7 +268,7 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
 
     # stereographic projection
     if (!is.null(fov)) {
-      if (dat[[field]]$color.by.property) dat[[field]]$value=dat[[field]]$value[x[,3]>0]
+      if (snapshot[[field]]$color.by.property) snapshot[[field]]$value=snapshot[[field]]$value[x[,3]>0]
       stretch = width/2/tan(fov/180*pi/2)
       x = x[x[,3]>0,]
       distance = vectornorm(x)
@@ -284,21 +284,21 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
     if (!is.null(depth)) {
       if (is.null(fov)) {
         if (taper) {
-          if (dat[[field]]$color.by.property) dat[[field]]$value=dat[[field]]$value[abs(x[,3])<=depth]
+          if (snapshot[[field]]$color.by.property) snapshot[[field]]$value=snapshot[[field]]$value[abs(x[,3])<=depth]
           x = x[abs(x[,3])<=depth,]
           weight = kernel(abs(x[,3]),depth/2)
         } else {
-          if (dat[[field]]$color.by.property) dat[[field]]$value=dat[[field]]$value[abs(x[,3])<=depth/2]
+          if (snapshot[[field]]$color.by.property) snapshot[[field]]$value=snapshot[[field]]$value[abs(x[,3])<=depth/2]
           x = x[abs(x[,3])<=depth/2,]
         }
       } else {
         if (taper) {
-          if (dat[[field]]$color.by.property) dat[[field]]$value=dat[[field]]$value[distance<=2*depth]
+          if (snapshot[[field]]$color.by.property) snapshot[[field]]$value=snapshot[[field]]$value[distance<=2*depth]
           x = x[distance<=2*depth,]
           distance = distance[distance<=2*depth]
           weight = kernel(distance,depth)
         } else {
-          if (dat[[field]]$color.by.property) dat[[field]]$value=dat[[field]]$value[distance<=depth]
+          if (snapshot[[field]]$color.by.property) snapshot[[field]]$value=snapshot[[field]]$value[distance<=depth]
           x = x[distance<=depth,]
         }
       }
@@ -306,21 +306,21 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
     if (is.null(weight)) weight=rep(1,dim(x)[1])
 
     #  raster particle data
-    if (dat[[field]]$smoothing==0) {
-      g = cooltools::griddata2(x[,1], x[,2], w=weight, xlim=xlim, ylim=ylim, n=c(nx,ny))
+    if (snapshot[[field]]$smoothing==0) {
+      g = cooltools::griddata(x[,1:2], w=weight, min=c(xlim[1],ylim[1]), max=c(xlim[2],ylim[2]), n=c(nx,ny))
       out[[field]]$density = g$m
-      if (dat[[field]]$color.by.property) {
-        g = cooltools::griddata2(x[,1], x[,2], w=as.vector(dat[[field]]$value)*weight, xlim=xlim, ylim=ylim, n=c(nx,ny))
+      if (snapshot[[field]]$color.by.property) {
+        g = cooltools::griddata(x[,1:2], w=as.vector(snapshot[[field]]$value)*weight, min=c(xlim[1],ylim[1]), max=c(xlim[2],ylim[2]), n=c(nx,ny))
         out[[field]]$value = g$m/out[[field]]$density
         out[[field]]$value[!is.finite(out[[field]]$value)] = 0
       }
     } else {
       if (kde) {
-        g = kde2(x[,1], x[,2], w=weight, xlim=xlim, ylim=ylim, n=c(nx,ny), s=dat[[field]]$smoothing/8/dx,
-                 sd.max=dat[[field]]$smoothing*2/dx, cpp=TRUE)
+        g = kde2(x[,1], x[,2], w=weight, xlim=xlim, ylim=ylim, n=c(nx,ny), s=snapshot[[field]]$smoothing/8/dx,
+                 sd.max=snapshot[[field]]$smoothing*2/dx)
         out[[field]]$density = g$d
-        if (dat[[field]]$color.by.property) {
-          g = cooltools::kde2(x[,1], x[,2], w=as.vector(dat[[field]]$value)*weight, xlim=xlim, ylim=ylim, n=c(nx,ny), s=dat[[field]]$smoothing/8/dx, sd.max=dat[[field]]$smoothing*2/dx, cpp=TRUE)
+        if (snapshot[[field]]$color.by.property) {
+          g = cooltools::kde2(x[,1], x[,2], w=as.vector(snapshot[[field]]$value)*weight, xlim=xlim, ylim=ylim, n=c(nx,ny), s=snapshot[[field]]$smoothing/8/dx, sd.max=snapshot[[field]]$smoothing*2/dx)
           out[[field]]$value = g$d/out[[field]]$density
           out[[field]]$value[!is.finite(out[[field]]$value)] = 0
         }
@@ -328,55 +328,55 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
         if (!requireNamespace("EBImage", quietly=TRUE)) {
           stop('Package EBImage is needed in function plot.gadget if kde=FALSE. Consider setting kde=TRUE if you cannot install EBImage.')
         }
-        g = cooltools::griddata2(x[,1], x[,2], w=weight, xlim=xlim, ylim=ylim, n=c(nx,ny))
-        out[[field]]$density = EBImage::gblur(g$m, dat[[field]]$smoothing/dx)
-        if (dat[[field]]$color.by.property) {
-          g = cooltools::griddata2(x[,1], x[,2], w=as.vector(dat[[field]]$value)*weight, xlim=xlim, ylim=ylim, n=c(nx,ny))
-          out[[field]]$value = EBImage::gblur(g$m, dat[[field]]$smoothing/dx)/out[[field]]$density
+        g = griddata(x[,1:2], w=weight, min=c(xlim[1],ylim[1]), max=c(xlim[2],ylim[2]), n=c(nx,ny))
+        out[[field]]$density = EBImage::gblur(g$m, snapshot[[field]]$smoothing/dx)
+        if (snapshot[[field]]$color.by.property) {
+          g = cooltools::griddata(x[,1:2], w=as.vector(snapshot[[field]]$value)*weight, min=c(xlim[1],ylim[1]), max=c(xlim[2],ylim[2]), n=c(nx,ny))
+          out[[field]]$value = EBImage::gblur(g$m, snapshot[[field]]$smoothing/dx)/out[[field]]$density
           out[[field]]$value[!is.finite(out[[field]]$value)] = 0
         }
       }
     }
     out[[field]]$density[out[[field]]$density<0] = 0
-    if (dat[[field]]$color.by.property) out[[field]]$value[out[[field]]$value<0] = 0
+    if (snapshot[[field]]$color.by.property) out[[field]]$value[out[[field]]$value<0] = 0
     out[[field]]$n.eff = sum(out[[field]]$density)
   }
 
   # turn density and value matrices into RGB layers
-  nlayers = sum(dat$Header$NumPart_ThisFile[types+1]>0)
+  nlayers = sum(snapshot$Header$NumPart_ThisFile[types+1]>0)
   img = array(0,c(nx,ny,3,nlayers))
   layer = 0
 
   for (type in types) {
-    if (dat$Header$NumPart_ThisFile[type+1]>0) {
+    if (snapshot$Header$NumPart_ThisFile[type+1]>0) {
 
       field = sprintf('PartType%d',type)
       layer = layer+1
 
       # convert density to brightness
-      linear.scaling = 0.1*dat[[field]]$lum*ngrid^2/max(1,ifelse(fix.luminosity,out[[field]]$n.tot,out[[field]]$n.eff)) # linear luminosity scaling factor
-      brightness = (linear.scaling*out[[field]]$density)^dat[[field]]$gamma
+      linear.scaling = 0.1*snapshot[[field]]$lum*ngrid^2/max(1,ifelse(fix.luminosity,out[[field]]$n.tot,out[[field]]$n.eff)) # linear luminosity scaling factor
+      brightness = (linear.scaling*out[[field]]$density)^snapshot[[field]]$gamma
 
       # if no values provided use density as values
-      if (dat[[field]]$color.by.property) {
+      if (snapshot[[field]]$color.by.property) {
         val = out[[field]]$value
       } else {
         val = brightness
       }
 
       # turn value into color
-      nvalcol = dim(dat[[field]]$colrgb)[2]-1
+      nvalcol = dim(snapshot[[field]]$colrgb)[2]-1
       for (k in seq(3)) {
-        normalised.value = (as.vector(val)-dat[[field]]$valrange[1])/diff(dat[[field]]$valrange)
+        normalised.value = (as.vector(val)-snapshot[[field]]$valrange[1])/diff(snapshot[[field]]$valrange)
         index = round(pmax(0,pmin(1,normalised.value))*(nvalcol-1)+1)
         index[is.na(index)] = nvalcol+1
-        img[,,k,layer] = dat[[field]]$colrgb[k,index]*(1+pmax(0,normalised.value-1))
+        img[,,k,layer] = snapshot[[field]]$colrgb[k,index]*(1+pmax(0,normalised.value-1))
       }
 
       # adjust brightness as a function of density if hue represents a property
-      if (dat[[field]]$color.by.property) {
+      if (snapshot[[field]]$color.by.property) {
         density.scaling = TRUE
-        if (!is.null(dat[[field]]$density.scaling)) density.scaling=dat[[field]]$density.scaling
+        if (!is.null(snapshot[[field]]$density.scaling)) density.scaling=snapshot[[field]]$density.scaling
         if (density.scaling) {
           for (k in seq(3)) {
             img[,,k,layer] = img[,,k,layer]*brightness

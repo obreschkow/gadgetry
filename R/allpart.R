@@ -2,7 +2,7 @@
 #'
 #' @description Concatenate identical properties of different particle species in a Gadget snapshot
 #'
-#' @param dat an object of class 'snapshot', which contains a Gadget simulation snapshot. Such objects are created, for example, using \code{\link{readsnapshot}} or \code{\link{snapshot}}. Gadget data type, which must contain at least one sublist PartType# (with #=0,1,...). Each sublist PartType# represents one type of particle (e.g. gas, stars, dark matter) and must contain at least the particles coordinates in an N-by-3 matrix \code{Coordinates}. Other optional elements of PartType# are:\cr
+#' @param snapshot an object of class 'snapshot' (or an analogously structured list), which contains a Gadget simulation snapshot. Such objects are created, for example, using \code{\link{readsnapshot}} or \code{\link{snapshot}}. Gadget data type, which must contain at least one sublist PartType# (with #=0,1,...). Each sublist PartType# represents one type of particle (e.g. gas, stars, dark matter) and must contain at least the particles coordinates in an N-by-3 matrix \code{Coordinates}. Other optional elements of PartType# are:\cr
 #' @param field character specifying particle property to concatenate.
 #' @param species vector of particle species to be included.
 #'
@@ -12,15 +12,16 @@
 #'
 #' @export
 
-allpart = function(dat, field = 'Coordinates', species = seq(0,5)) {
+allpart = function(snapshot, field = 'Coordinates', species = seq(0,5)) {
+
   x = list()
   k = 0
   for (i in species) {
     group = sprintf('PartType%d',i)
-    if (!is.null(dat[[group]])) {
-      if (!is.null(dat[[group]][[field]])) {
+    if (!is.null(snapshot[[group]])) {
+      if (!is.null(snapshot[[group]][[field]])) {
         k = k+1
-        x[[k]] = t(dat[[group]][[field]])
+        x[[k]] = t(snapshot[[group]][[field]])
       } else {
         stop(sprintf('Field %s does not exist for species %d.\n',field,i))
       }

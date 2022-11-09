@@ -2,6 +2,7 @@
 #'
 #' @importFrom cooltools runif3
 #' @importFrom stats median
+#' @importFrom methods is
 #'
 #' @description Summarizes the content of 'snapshot' class objects.
 #'
@@ -20,8 +21,6 @@
 #' @method summary snapshot
 #' @export
 summary.snapshot = function(object, ...) {
-
-  if (class(object)!='snapshot') stop('The argument must be of class "snapshot".')
 
   ntot = 0
   for (type in seq(0,10)) {

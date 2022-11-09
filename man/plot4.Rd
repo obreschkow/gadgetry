@@ -5,7 +5,7 @@
 \title{Display a simulation snapshot in four different projections}
 \usage{
 plot4(
-  x,
+  snapshot,
   rotations = c(2, 4, 1, 3),
   screen = TRUE,
   pdffile = NULL,
@@ -16,7 +16,7 @@ plot4(
 )
 }
 \arguments{
-\item{x}{Gadget data type, which must contain at least one sublist PartType# (with #=0,1,...). For details, see \code{\link{plot.snapshot}}.}
+\item{snapshot}{Object of class 'snapshot'. It must contain at least one sublist PartType# (with #=0,1,...). For details, see \code{\link{plot.snapshot}}.}
 
 \item{rotations}{4-vector or 4-element list specifying four different values/vectors of the argument \code{rotation} in \code{\link{plot.snapshot}}. These different rotations are shown in the bottom left, bottom right, top left, and top right panel, respectively, in this order.}
 
