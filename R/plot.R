@@ -328,11 +328,14 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
         if (!requireNamespace("EBImage", quietly=TRUE)) {
           stop('Package EBImage is needed in function plot.gadget if kde=FALSE. Consider setting kde=TRUE if you cannot install EBImage.')
         }
-        g = griddata(x[,1:2], w=weight, min=c(xlim[1],ylim[1]), max=c(xlim[2],ylim[2]), n=c(nx,ny))
-        out[[field]]$density = EBImage::gblur(g$m, snapshot[[field]]$smoothing/dx)
+        g = cooltools::griddata(x[,1:2], w=weight, min=c(xlim[1],ylim[1]), max=c(xlim[2],ylim[2]), n=c(nx,ny))
+        print(c(dim(g$m),snapshot[[field]]$smoothing/dx))
+        sigmamax = floor((min(nx,ny)-1)/6) # maximum allowed filter size for gblur
+        out[[field]]$density = EBImage::gblur(g$m, min(sigmamax,snapshot[[field]]$smoothing/dx))
+        print(2)
         if (snapshot[[field]]$color.by.property) {
           g = cooltools::griddata(x[,1:2], w=as.vector(snapshot[[field]]$value)*weight, min=c(xlim[1],ylim[1]), max=c(xlim[2],ylim[2]), n=c(nx,ny))
-          out[[field]]$value = EBImage::gblur(g$m, snapshot[[field]]$smoothing/dx)/out[[field]]$density
+          out[[field]]$value = EBImage::gblur(g$m, min(sigmamax,snapshot[[field]]$smoothing/dx))/out[[field]]$density
           out[[field]]$value[!is.finite(out[[field]]$value)] = 0
         }
       }
