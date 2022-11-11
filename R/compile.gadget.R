@@ -29,7 +29,7 @@ compile.gadget = function(source, DIR=NULL, CONFIG=NULL, EXEC=NULL, n.cores=8, c
     if (!is.null(EXEC)) stop('If DIR is specified, EXEC must not be given.')
   }
 
-  if (!exists(source)) stop(sprintf('Path does not exist: %s',source))
+  if (!file.exists(source)) stop(sprintf('Path does not exist: %s',source))
 
   if (measure.time) cooltools::tick('Compile Gadget')
 
@@ -46,7 +46,7 @@ compile.gadget = function(source, DIR=NULL, CONFIG=NULL, EXEC=NULL, n.cores=8, c
     cmd = sprintf('make -C %s DIR=%s',source,DIR)
   }
   error.code = system(cmd,intern=FALSE,ignore.stderr=TRUE,ignore.stdout=!verbose)
-  if (error.code>0) stop('Could not compile the Ggadget code.')
+  if (error.code>0) stop('Could not compile the Gadget code.')
 
   if (measure.time) cooltools::tock()
 
