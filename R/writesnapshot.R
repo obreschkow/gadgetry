@@ -1,6 +1,6 @@
 #' Write simulation snapshot in Gadget-2 binary format
 #'
-#' @description Write astrophysical N-body+SPH snapshot in Gadget-2 binary format, for use as initial conditions with Gadget Version 1/2/3/4 (SnapFormat=1).
+#' @description Write astrophysical N-body+SPH snapshot in Gadget-2 binary format, for use as initial conditions with Gadget Versions 1/2/3/4 (SnapFormat=1).
 #'
 #' @param part is a list of particle properties, for example to be used as initial conditions for a simulation. It contains the items:\cr
 #' \code{x} = N-by-3 matrix specifying the initial position in Cartesian coordinates of the N particles\cr

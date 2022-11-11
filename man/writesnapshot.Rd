@@ -24,7 +24,7 @@ writesnapshot(part, head, file)
 Returns a list containing the particle data. The format of the list depends on the input format.
 }
 \description{
-Write astrophysical N-body+SPH snapshot in Gadget-2 binary format, for use as initial conditions with Gadget Version 1/2/3/4 (SnapFormat=1).
+Write astrophysical N-body+SPH snapshot in Gadget-2 binary format, for use as initial conditions with Gadget Versions 1/2/3/4 (SnapFormat=1).
 }
 \seealso{
 \code{\link{readsnapshot}}
