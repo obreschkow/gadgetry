@@ -23,9 +23,9 @@ run.gadget = function(file.gadget, file.param, n.cores=8, verbose=FALSE, measure
 
   if (measure.time) cooltools::tick('Running Gadget')
 
-  cmd = sprintf('mpirun -np %d %sGadget4 %s',n.cores,file.gadget,file.param)
+  cmd = sprintf('mpirun -np %d %s %s',n.cores,file.gadget,file.param)
   error.code = system(cmd,intern=FALSE,ignore.stderr=TRUE,ignore.stdout=!verbose)
-  if (error.code>0) stop('Could not execute the gadget code.')
+  if (error.code>0) stop('Could not complete the Gadget run.')
 
   if (measure.time) cooltools::tock()
 
