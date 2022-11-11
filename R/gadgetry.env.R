@@ -1,6 +1,6 @@
 #' @title Package environment
 #'
-#' @description Environment used to store default parameters used in \code{\link{writeparam}}, as well as optional other global variables.
+#' @description Environment used to store default parameters used in \code{\link{writeparam}}, as well as optional other global variables. The default parameters are stored in \code{.gadgetry.env$default.parameters}.
 #'
 #' @seealso \code{\link{writeparam}}
 #'
@@ -19,7 +19,6 @@
                                         MaxFilesWithConcurrentIO = 0,
                                         TimeLimitCPU = 86400,
                                         CpuTimeBetRestartFile = 7200,
-                                        FlushCpuTimeDiff = 120,
                                         MaxMemSize = 2000,
                                         TimeBegin = 0,
                                         TimeMax = 1,
@@ -38,7 +37,6 @@
                                         ErrTolTheta = 0.7,
                                         ErrTolForceAcc = 1,
                                         ErrTolThetaMax = 0.005,
-                                        ActivePartFracForPMinsteadOfEwald = 0.1,
                                         MaxSizeTimestep = 0.01,
                                         MinSizeTimestep = 0,
                                         ErrTolIntAccuracy = 0.025,
@@ -46,7 +44,7 @@
                                         ActivePartFracForNewDomainDecomp = 0.01,
                                         TopNodeFactor = 2.5,
                                         OutputListOn = 0,
-                                        OutputListFilename = '',
+                                        OutputListFilename = 'output_times.txt',
                                         TimeOfFirstSnapshot = 0,
                                         TimeBetSnapshot = 0.1,
                                         TimeBetStatistics = 0.1,
@@ -54,7 +52,6 @@
                                         MaxNumNgbDeviation = 2,
                                         InitGasTemp = 1e4,
                                         ArtBulkViscConst = 1,
-                                        ViscosityAlphaMin = 0,
                                         SofteningClassOfPartType0 = 0,
                                         SofteningClassOfPartType1 = 0,
                                         SofteningClassOfPartType2 = 0,
@@ -62,16 +59,4 @@
                                         SofteningClassOfPartType4 = 0,
                                         SofteningClassOfPartType5 = 0,
                                         SofteningComovingClass0 = 0.5,
-                                        SofteningMaxPhysClass0 = 0.5,
-                                        GasSoftFactor = 1.5,
-                                        MinimumComovingHydroSoftening = 0.001,
-                                        AdaptiveHydroSofteningSpacing = 1.05,
-                                        MaxSfrTimescale = 1.5,
-                                        TempClouds = 1e3,
-                                        TempSupernova = 1e8,
-                                        FactorEVP = 1e3,
-                                        FactorSN = 0.1,
-                                        CritPhysDensity = 0,
-                                        CritOverDensity = 57.7,
-                                        TreecoolFile = 'data/TREECOOL_fg_dec11',
-                                        MinEgySpec = 0)
+                                        SofteningMaxPhysClass0 = 0.5)

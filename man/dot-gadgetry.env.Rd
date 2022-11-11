@@ -11,7 +11,7 @@ An object of class \code{environment} of length 1.
 .gadgetry.env
 }
 \description{
-Environment used to store default parameters used in \code{\link{writeparam}}, as well as optional other global variables.
+Environment used to store default parameters used in \code{\link{writeparam}}, as well as optional other global variables. The default parameters are stored in \code{.gadgetry.env$default.parameters}.
 }
 \seealso{
 \code{\link{writeparam}}
