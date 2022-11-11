@@ -59,4 +59,5 @@
                                         SofteningClassOfPartType4 = 0,
                                         SofteningClassOfPartType5 = 0,
                                         SofteningComovingClass0 = 0.5,
-                                        SofteningMaxPhysClass0 = 0.5)
+                                        SofteningMaxPhysClass0 = 0.5,
+                                        MinEgySpec = 0)
