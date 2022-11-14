@@ -4,18 +4,22 @@
 \alias{writeparam}
 \title{Write Gadget-4 parameter file}
 \usage{
-writeparam(file, param = NULL)
+writeparam(file, param = NULL, use.defaults = TRUE, suppress.checks = FALSE)
 }
 \arguments{
 \item{file}{parameter filename}
 
 \item{param}{list of parameter with values}
+
+\item{use.defaults}{logical flag. If TRUE, default parameters as listed in \code{.gadgetry.env$default.parameters} are used, unless otherwise specified in \code{param}.}
+
+\item{suppress.checks}{logical flag. If TRUE, input parameter checks are suppressed.}
 }
 \value{
 Returns the full parameter list.
 }
 \description{
-Write parameter file for the astrophysical N-body+SPH simulation code Gadget-4.
+Write parameter file for the astrophysical N-body+SPH simulation code Gadget-4. Parameters that are not specified, will be taken from \code{.gadgetry.env$default.parameters}.
 }
 \author{
 Danail Obreschkow
