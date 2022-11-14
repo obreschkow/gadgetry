@@ -21,6 +21,8 @@
 
 compile.gadget = function(source, DIR=NULL, CONFIG=NULL, EXEC=NULL, n.cores=8, clean=FALSE, verbose=FALSE, measure.time=TRUE) {
 
+  if (!file.exists(source)) stop(sprintf('Path does not exist: %s',source))
+
   if (is.null(DIR)) {
     if (is.null(CONFIG)) stop('If DIR is not specified, CONFIG must be given.')
     if (is.null(EXEC)) stop('If DIR is not specified, EXEC must be given.')
@@ -29,26 +31,24 @@ compile.gadget = function(source, DIR=NULL, CONFIG=NULL, EXEC=NULL, n.cores=8, c
     if (!is.null(EXEC)) stop('If DIR is specified, EXEC must not be given.')
   }
 
-  if (!file.exists(source)) stop(sprintf('Path does not exist: %s',source))
-
-  if (measure.time) cooltools::tick('Compile Gadget')
+  if (measure.time) cooltools::tick('Compile Gadget\n')
 
   if (clean) {
     if (is.null(DIR)) stop('DIR must be specified to clean previous builds')
     cmd = sprintf('make -C %s clean DIR=%s',source,DIR)
-    error.code = system(cmd,intern=FALSE,ignore.stderr=TRUE,ignore.stdout=!verbose)
+    error.code = system(cmd,intern=FALSE,ignore.stderr=FALSE,ignore.stdout=!verbose)
     if (error.code>0) stop('Could not clean previous builds.')
   }
 
   if (is.null(DIR)) {
-    cmd = sprintf('make -C %s CONFIG=%s EXEC=%s',source,CONFIG,EXEC)
+    cmd = sprintf('make -C %s -j %d CONFIG=%s EXEC=%s',source,n.cores,CONFIG,EXEC)
   } else {
-    cmd = sprintf('make -C %s DIR=%s',source,DIR)
+    cmd = sprintf('make -C %s -j %d DIR=%s',source,n.cores,DIR)
   }
-  error.code = system(cmd,intern=FALSE,ignore.stderr=TRUE,ignore.stdout=!verbose)
-  if (error.code>0) stop('Could not compile the Gadget code.')
+  error.code = system(cmd,intern=FALSE,ignore.stderr=FALSE,ignore.stdout=!verbose)
+  if (error.code>0) stop(sprintf('Could not compile the Gadget code using command:\n%s',cmd))
 
-  if (measure.time) cooltools::tock()
+  if (measure.time) cooltools::tock('Compilation completed',fmt='%s (%.2fs).\n')
 
   invisible(cmd)
 }
