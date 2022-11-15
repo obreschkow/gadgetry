@@ -14,30 +14,45 @@
 
 allpart = function(snapshot, field = 'Coordinates', species = seq(0,5)) {
 
-  x = list()
-  k = 0
+  # determine required space
+  n.valid.species = 0
   for (i in species) {
     group = sprintf('PartType%d',i)
     if (!is.null(snapshot[[group]])) {
       if (!is.null(snapshot[[group]][[field]])) {
-        k = k+1
-        x[[k]] = t(snapshot[[group]][[field]])
+        n.valid.species = n.valid.species+1
+        dm = dim(snapshot[[group]][[field]])
+        d = length(dm)
       } else {
         stop(sprintf('Field %s does not exist for species %d.\n',field,i))
       }
     }
   }
-  if (k==0) stop(sprintf('Field %s not found in considered species.\n',field))
-  if (length(dim(x[[1]]))!=2) stop('unknown data format')
-  if (dim(x[[1]])[1]==3) {
-    x = unlist(x)
-    if (length(x)%%3!=0) stop('length of field inconsistent with N-by-3 matrix')
-    N = length(x)/3
-    x = t(array(x,c(3,N)))
-  } else if (dim(x[[1]])[1]==1) {
-    x = unlist(x)
-  } else {
+  if (n.valid.species==0) stop(sprintf('Field %s not found in considered species.\n',field))
+
+  # check data size
+  if (d==2) {
+    if (dm[2]!=3) stop('unknown data format')
+  } else if (d!=0 & d!=1) {
     stop('unknown data format')
   }
+
+  # write data into output array
+  x = c()
+  for (i in species) {
+    group = sprintf('PartType%d',i)
+    if (!is.null(snapshot[[group]])) {
+      if (!is.null(snapshot[[group]][[field]])) {
+        if (d==2) {
+          x = rbind(x,snapshot[[group]][[field]])
+        } else {
+          x = c(x,snapshot[[group]][[field]])
+        }
+      } else {
+        stop(sprintf('Field %s does not exist for species %d.\n',field,i))
+      }
+    }
+  }
+
   return(x)
 }

@@ -156,7 +156,7 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
 
   # determine geometric center
   if (is.null(center)) {
-    center = apply(x,2,mean) # geometric centre
+    center = colSums(x)/dim(x)[1] # geometric centre
   } else {
     if (length(center)==1) center=rep(center,3)
     if (length(center)==2) center=c(center,0)
@@ -260,11 +260,8 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
     # compute total number of particles
     out[[field]]$n.tot = dim(x)[1]
 
-    # translate particles to custom center
-    x = sweep(x, 2, center)
-
-    # rotate coordinates (active rotation)
-    x = t(rot%*%t(x))
+    # translate particles to custom center and rotate
+    x = t(rot%*%(t(x)-center)) # probably the fastest way to do this
 
     # stereographic projection
     if (!is.null(fov)) {
@@ -303,15 +300,18 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
         }
       }
     }
-    if (is.null(weight)) weight=rep(1,dim(x)[1])
 
     #  raster particle data
     if (snapshot[[field]]$smoothing==0) {
       g = cooltools::griddata(x[,1:2], w=weight, min=c(xlim[1],ylim[1]), max=c(xlim[2],ylim[2]), n=c(nx,ny))
-      out[[field]]$density = g$m
+      if (is.null(weight)) {
+        out[[field]]$density = g$counts
+      } else {
+        out[[field]]$density = g$mass
+      }
       if (snapshot[[field]]$color.by.property) {
         g = cooltools::griddata(x[,1:2], w=as.vector(snapshot[[field]]$value)*weight, min=c(xlim[1],ylim[1]), max=c(xlim[2],ylim[2]), n=c(nx,ny))
-        out[[field]]$value = g$m/out[[field]]$density
+        out[[field]]$value = g$mass/out[[field]]$density
         out[[field]]$value[!is.finite(out[[field]]$value)] = 0
       }
     } else {
@@ -330,7 +330,11 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
         }
         g = cooltools::griddata(x[,1:2], w=weight, min=c(xlim[1],ylim[1]), max=c(xlim[2],ylim[2]), n=c(nx,ny))
         sigmamax = floor((min(nx,ny)-1)/6) # maximum allowed filter size for gblur
-        out[[field]]$density = EBImage::gblur(g$m, min(sigmamax,snapshot[[field]]$smoothing/dx))
+        if (is.null(weight)) {
+          out[[field]]$density = EBImage::gblur(g$counts, min(sigmamax,snapshot[[field]]$smoothing/dx))
+        } else {
+          out[[field]]$density = EBImage::gblur(g$mass, min(sigmamax,snapshot[[field]]$smoothing/dx))
+        }
         if (snapshot[[field]]$color.by.property) {
           g = cooltools::griddata(x[,1:2], w=as.vector(snapshot[[field]]$value)*weight, min=c(xlim[1],ylim[1]), max=c(xlim[2],ylim[2]), n=c(nx,ny))
           out[[field]]$value = EBImage::gblur(g$m, min(sigmamax,snapshot[[field]]$smoothing/dx))/out[[field]]$density
@@ -345,7 +349,7 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
 
   # turn density and value matrices into RGB layers
   nlayers = sum(snapshot$Header$NumPart_ThisFile[types+1]>0)
-  img = array(0,c(nx,ny,3,nlayers))
+  img4 = array(dim=c(nx,ny,3,nlayers))
   layer = 0
 
   for (type in types) {
@@ -371,7 +375,7 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
         normalised.value = (as.vector(val)-snapshot[[field]]$valrange[1])/diff(snapshot[[field]]$valrange)
         index = round(pmax(0,pmin(1,normalised.value))*(nvalcol-1)+1)
         index[is.na(index)] = nvalcol+1
-        img[,,k,layer] = snapshot[[field]]$colrgb[k,index]*(1+pmax(0,normalised.value-1))
+        img4[,,k,layer] = snapshot[[field]]$colrgb[k,index]*(1+pmax(0,normalised.value-1))
       }
 
       # adjust brightness as a function of density if hue represents a property
@@ -380,7 +384,7 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
         if (!is.null(snapshot[[field]]$density.scaling)) density.scaling=snapshot[[field]]$density.scaling
         if (density.scaling) {
           for (k in seq(3)) {
-            img[,,k,layer] = img[,,k,layer]*brightness
+            img4[,,k,layer] = img4[,,k,layer]*brightness
           }
         }
       }
@@ -392,7 +396,8 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
   if (layer!=nlayers) stop('wrong number of layers')
 
   # sum color layers
-  img = apply(img,1:3,sum)
+  img = array(0,dim=c(nx,ny,3))
+  for (layer in seq(nlayers)) img=img+img4[,,,layer]
 
   # apply non-linear brightness scale to each RGB channel individually
   img = atan(img)/pi*2
