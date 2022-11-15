@@ -26,6 +26,7 @@
 #' @param aspect aspect ratio (= width/height).
 #' @param ngrid number of grid cells per side in the output image. If the image is not square ngrid is interpreted as the geometric mean between the horizontal and the vertical number of pixels, such that the total number of pixels remains about ngrid^2.
 #' @param fix.luminosity logical flag specifying whether the brightness should scale with the number of particles in the field of view. Set this to \code{FALSE} to avoid luminosity fluctuations in movies.
+#' @param hdcolors logical flag. If TRUE, input color scales are slightly smoothed to avoid spurious slight color jumps steps due to 8-bit color representation.
 #' @param lum default value used in \code{dat$PartType#} (see above).
 #' @param gamma default value used in \code{dat$PartType#} (see above).
 #' @param kde default value used in \code{dat$PartType#} (see above).
@@ -81,7 +82,7 @@
 plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth=NULL, taper=FALSE,
                          aspect=1, ngrid=300, kde=TRUE, smoothing=NULL,
                          types=NULL, sample.fraction=1,
-                         lum=1, gamma=1, shadows=1, fix.luminosity=FALSE,
+                         lum=1, gamma=1, shadows=1, fix.luminosity=FALSE, hdcolors=TRUE,
                          screen=TRUE, pngfile=NULL, pdffile=NULL,
                          title=NULL, title.origin = NULL,
                          arrows = TRUE, arrow.origin = NULL, arrow.length = NULL, arrow.lwd = 1.5,
@@ -146,7 +147,17 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
       col = grDevices::col2rgb(snapshot[[field]]$col)/255
       snapshot[[field]]$colrgb = cbind(col%*%seq(0,1,length=5000),c(0,0,0))
     } else {
-      snapshot[[field]]$colrgb = cbind(grDevices::col2rgb(snapshot[[field]]$col)/255,c(0,0,0))
+      snapshot[[field]]$colrgb = grDevices::col2rgb(snapshot[[field]]$col)/255
+      if (hdcolors) {
+        # smooth color scale to overcome 8-bit representation
+        ncol = dim(snapshot[[field]]$colrgb)[2]
+        if (ncol>3) {
+          for (d in seq(3)) {
+            snapshot[[field]]$colrgb[d,] = cooltools::smoothfun(seq(ncol),c(snapshot[[field]]$colrgb[d,]),df=max(2,min(20,floor(sqrt(ncol)))))(seq(ncol))
+          }
+        }
+      }
+      snapshot[[field]]$colrgb = cbind(cooltools::lim(snapshot[[field]]$colrgb),c(0,0,0))
     }
 
   }
@@ -303,14 +314,21 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
 
     #  raster particle data
     if (snapshot[[field]]$smoothing==0) {
+      print('a')
       g = cooltools::griddata(x[,1:2], w=weight, min=c(xlim[1],ylim[1]), max=c(xlim[2],ylim[2]), n=c(nx,ny))
+      print('b')
       if (is.null(weight)) {
         out[[field]]$density = g$counts
       } else {
         out[[field]]$density = g$mass
       }
       if (snapshot[[field]]$color.by.property) {
-        g = cooltools::griddata(x[,1:2], w=as.vector(snapshot[[field]]$value)*weight, min=c(xlim[1],ylim[1]), max=c(xlim[2],ylim[2]), n=c(nx,ny))
+        if (is.null(weight)) {
+          w = as.vector(snapshot[[field]]$value)
+        } else {
+          w = as.vector(snapshot[[field]]$value)*weight
+        }
+        g = cooltools::griddata(x[,1:2], w=w, min=c(xlim[1],ylim[1]), max=c(xlim[2],ylim[2]), n=c(nx,ny))
         out[[field]]$value = g$mass/out[[field]]$density
         out[[field]]$value[!is.finite(out[[field]]$value)] = 0
       }
@@ -320,7 +338,12 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
                  sd.max=snapshot[[field]]$smoothing*2/dx)
         out[[field]]$density = g$d
         if (snapshot[[field]]$color.by.property) {
-          g = cooltools::kde2(x[,1], x[,2], w=as.vector(snapshot[[field]]$value)*weight, xlim=xlim, ylim=ylim, n=c(nx,ny), s=snapshot[[field]]$smoothing/8/dx, sd.max=snapshot[[field]]$smoothing*2/dx)
+          if (is.null(weight)) {
+            w = as.vector(snapshot[[field]]$value)
+          } else {
+            w = as.vector(snapshot[[field]]$value)*weight
+          }
+          g = cooltools::kde2(x[,1], x[,2], w=w, xlim=xlim, ylim=ylim, n=c(nx,ny), s=snapshot[[field]]$smoothing/8/dx, sd.max=snapshot[[field]]$smoothing*2/dx)
           out[[field]]$value = g$d/out[[field]]$density
           out[[field]]$value[!is.finite(out[[field]]$value)] = 0
         }
@@ -336,7 +359,12 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
           out[[field]]$density = EBImage::gblur(g$mass, min(sigmamax,snapshot[[field]]$smoothing/dx))
         }
         if (snapshot[[field]]$color.by.property) {
-          g = cooltools::griddata(x[,1:2], w=as.vector(snapshot[[field]]$value)*weight, min=c(xlim[1],ylim[1]), max=c(xlim[2],ylim[2]), n=c(nx,ny))
+          if (is.null(weight)) {
+            w = as.vector(snapshot[[field]]$value)
+          } else {
+            w = as.vector(snapshot[[field]]$value)*weight
+          }
+          g = cooltools::griddata(x[,1:2], w=w, min=c(xlim[1],ylim[1]), max=c(xlim[2],ylim[2]), n=c(nx,ny))
           out[[field]]$value = EBImage::gblur(g$m, min(sigmamax,snapshot[[field]]$smoothing/dx))/out[[field]]$density
           out[[field]]$value[!is.finite(out[[field]]$value)] = 0
         }

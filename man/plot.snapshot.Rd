@@ -22,6 +22,7 @@
   gamma = 1,
   shadows = 1,
   fix.luminosity = FALSE,
+  hdcolors = TRUE,
   screen = TRUE,
   pngfile = NULL,
   pdffile = NULL,
@@ -86,6 +87,8 @@
 \item{shadows}{overall contrast value.}
 
 \item{fix.luminosity}{logical flag specifying whether the brightness should scale with the number of particles in the field of view. Set this to \code{FALSE} to avoid luminosity fluctuations in movies.}
+
+\item{hdcolors}{logical flag. If TRUE, input color scales are slightly smoothed to avoid spurious slight color jumps steps due to 8-bit color representation.}
 
 \item{screen}{logical flag specifying whether the images is displayed on the screen.}
 
