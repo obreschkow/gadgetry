@@ -195,7 +195,7 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
     if (is.null(xlab)) xlab = expression(e[1])
     if (is.null(ylab)) ylab = expression(e[2])
   } else if (length(rotation)==1) {
-    if (rotation>3) e = eigen(cooltools::quadrupole(x))$vectors
+    if (rotation>3) e = eigen(cooltools::quadrupole(t(t(x)-center)))$vectors
     if (rotation==1) {
       rot = diag(3)
       if (is.null(xlab)) xlab = 'x'
@@ -224,7 +224,7 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
       stop('rotation must be an integer 1,...,6, a real 3-vector, or a 3-by-3 matrix.')
     }
   } else if (length(rotation)==9) {
-    rot = matrix(rotation,3,3)
+    rot = rotation
   } else {
     stop('rotation must be an integer 1,...,6, a real 3-vector, or a 3-by-3 matrix.')
   }
@@ -314,9 +314,7 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
 
     #  raster particle data
     if (snapshot[[field]]$smoothing==0) {
-      print('a')
       g = cooltools::griddata(x[,1:2], w=weight, min=c(xlim[1],ylim[1]), max=c(xlim[2],ylim[2]), n=c(nx,ny))
-      print('b')
       if (is.null(weight)) {
         out[[field]]$density = g$counts
       } else {
@@ -449,7 +447,9 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
 
     if (mode==2 & !is.null(pdffile)) {
       make = TRUE
+      par(mar=rep(0,4))
       grDevices::pdf(pdffile,width=7*width/mean.length,height=7*height/mean.length)
+      par(mar=rep(0,4))
     }
 
     if (make) {
