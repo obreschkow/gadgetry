@@ -174,7 +174,7 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
   }
 
   # determine plotting limits
-  if (is.null(width)) width = 2*sqrt(2)*max(cooltools::vectornorm(x))/sqrt(1+1/aspect^2)
+  if (is.null(width)) width = 2*sqrt(2)*max(cooltools::vectornorm(t(t(x)-center)))/sqrt(1+1/aspect^2)
   height = width/aspect
   xlim = c(-1,1)*width/2
   ylim = c(-1,1)*height/2
