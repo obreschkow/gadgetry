@@ -315,11 +315,7 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
     #  raster particle data
     if (snapshot[[field]]$smoothing==0) {
       g = cooltools::griddata(x[,1:2], w=weight, min=c(xlim[1],ylim[1]), max=c(xlim[2],ylim[2]), n=c(nx,ny))
-      if (is.null(weight)) {
-        out[[field]]$density = g$counts
-      } else {
-        out[[field]]$density = g$mass
-      }
+      out[[field]]$density = g$field
       if (snapshot[[field]]$color.by.property) {
         if (is.null(weight)) {
           w = as.vector(snapshot[[field]]$value)
@@ -327,7 +323,7 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
           w = as.vector(snapshot[[field]]$value)*weight
         }
         g = cooltools::griddata(x[,1:2], w=w, min=c(xlim[1],ylim[1]), max=c(xlim[2],ylim[2]), n=c(nx,ny))
-        out[[field]]$value = g$mass/out[[field]]$density
+        out[[field]]$value = g$field/out[[field]]$density
         out[[field]]$value[!is.finite(out[[field]]$value)] = 0
       }
     } else {
@@ -351,11 +347,7 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
         }
         g = cooltools::griddata(x[,1:2], w=weight, min=c(xlim[1],ylim[1]), max=c(xlim[2],ylim[2]), n=c(nx,ny))
         sigmamax = floor((min(nx,ny)-1)/6) # maximum allowed filter size for gblur
-        if (is.null(weight)) {
-          out[[field]]$density = EBImage::gblur(g$counts, min(sigmamax,snapshot[[field]]$smoothing/dx))
-        } else {
-          out[[field]]$density = EBImage::gblur(g$mass, min(sigmamax,snapshot[[field]]$smoothing/dx))
-        }
+        out[[field]]$density = EBImage::gblur(g$field, min(sigmamax,snapshot[[field]]$smoothing/dx))
         if (snapshot[[field]]$color.by.property) {
           if (is.null(weight)) {
             w = as.vector(snapshot[[field]]$value)
@@ -363,7 +355,7 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
             w = as.vector(snapshot[[field]]$value)*weight
           }
           g = cooltools::griddata(x[,1:2], w=w, min=c(xlim[1],ylim[1]), max=c(xlim[2],ylim[2]), n=c(nx,ny))
-          out[[field]]$value = EBImage::gblur(g$m, min(sigmamax,snapshot[[field]]$smoothing/dx))/out[[field]]$density
+          out[[field]]$value = EBImage::gblur(g$field, min(sigmamax,snapshot[[field]]$smoothing/dx))/out[[field]]$density
           out[[field]]$value[!is.finite(out[[field]]$value)] = 0
         }
       }
