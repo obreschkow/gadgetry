@@ -101,13 +101,11 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
       all.types=c(all.types,type)
     }
   }
-  print(all.types)
   if (is.null(types)) {
     types = all.types
   } else {
     types = sort(unique(types[types%in%all.types]))
   }
-  print(types)
 
   # handle fov
   if (!is.null(fov)) {
