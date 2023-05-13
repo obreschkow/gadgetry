@@ -94,13 +94,20 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
   out = list()
 
   # determine particle types to be considered
-  if (is.null(types)) {
-    types = c()
-    for (type in seq(0,20)) {
-      field = sprintf('PartType%d',type)
-      if (!is.null(snapshot[[field]])) types=c(types,type)
+  all.types = c()
+  for (type in seq(0,20)) {
+    field = sprintf('PartType%d',type)
+    if (!is.null(snapshot[[field]]$Coordinates)) {
+      all.types=c(all.types,type)
     }
   }
+  print(all.types)
+  if (is.null(types)) {
+    types = all.types
+  } else {
+    types = sort(unique(types[types%in%all.types]))
+  }
+  print(types)
 
   # handle fov
   if (!is.null(fov)) {
@@ -163,7 +170,7 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
   }
   # end input handling #########################################################
 
-  x = allpart(snapshot,'Coordinates')
+  x = allpart(snapshot,'Coordinates',species = all.types)
 
   # determine geometric center
   if (is.null(center)) {
