@@ -15,6 +15,7 @@
   aspect = 1,
   ngrid = 300,
   kde = TRUE,
+  nlkde = 1,
   smoothing = NULL,
   types = NULL,
   sample.fraction = 1,
@@ -54,6 +55,7 @@
 \code{lum} = overall scaling factor for the color scale.\cr
 \code{gamma} = gamma parameter setting the non-linear conversion between density and brightness/color. The larger the value, the higher the dynamic range.\cr
 \code{kde} = logical flag (default TRUE), whether the particles are smoothed using an adaptive kernel density estimator.\cr
+\code{nlkde} = nolinear KDE factor (default 1). Only used if kde=TRUE.\cr
 \code{smoothing} = smoothing scale in simulation units. If not given, a value is set automatically to one percent of the geometric mean of width and height.\cr\cr}
 
 \item{center}{optional 3-vector specifying the coordinate at the center of the plot. The default is the geometric center (= center of mass, if all particle masses are equal).}
@@ -73,6 +75,8 @@
 \item{ngrid}{number of grid cells per side in the output image. If the image is not square ngrid is interpreted as the geometric mean between the horizontal and the vertical number of pixels, such that the total number of pixels remains about ngrid^2.}
 
 \item{kde}{default value used in \code{dat$PartType#} (see above).}
+
+\item{nlkde}{default value used in \code{dat$PartType#} (see above).}
 
 \item{smoothing}{default value used in \code{dat$PartType#} (see above).}
 
