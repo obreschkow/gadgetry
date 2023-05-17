@@ -15,7 +15,6 @@
 #' \code{lum} = overall scaling factor for the color scale.\cr
 #' \code{gamma} = gamma parameter setting the non-linear conversion between density and brightness/color. The larger the value, the higher the dynamic range.\cr
 #' \code{kde} = logical flag (default TRUE), whether the particles are smoothed using an adaptive kernel density estimator.\cr
-#' \code{nlkde} = nolinear KDE factor (default 1). Only used if kde=TRUE.\cr
 #' \code{smoothing} = smoothing scale in simulation units. If not given, a value is set automatically to one percent of the geometric mean of width and height.\cr\cr
 #' @param types vector specifying the particle types to be displayed. These numbers must correspond to the # in the sublists PartType#. If not given, all particle species are shown.
 #' @param center optional 3-vector specifying the coordinate at the center of the plot. The default is the geometric center (= center of mass, if all particle masses are equal).
@@ -31,7 +30,6 @@
 #' @param lum default value used in \code{dat$PartType#} (see above).
 #' @param gamma default value used in \code{dat$PartType#} (see above).
 #' @param kde default value used in \code{dat$PartType#} (see above).
-#' @param nlkde default value used in \code{dat$PartType#} (see above).
 #' @param smoothing default value used in \code{dat$PartType#} (see above).
 #' @param shadows overall contrast value.
 #' @param sample.fraction fraction of particles to be used. Ff 1, all particles are used, if <1 a random subsample is drawn.
@@ -82,7 +80,7 @@
 #' @method plot snapshot
 #' @export
 plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth=NULL, taper=FALSE,
-                         aspect=1, ngrid=300, kde=TRUE, nlkde=1, smoothing=NULL,
+                         aspect=1, ngrid=300, kde=TRUE, smoothing=NULL,
                          types=NULL, sample.fraction=1,
                          lum=1, gamma=1, shadows=1, fix.luminosity=FALSE, hdcolors=TRUE,
                          screen=TRUE, pngfile=NULL, pdffile=NULL,
@@ -259,14 +257,8 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
     } else {
       kde = snapshot[[field]]$kde
     }
-    if (is.null(snapshot[[field]]$nlkde)) {
-      nlkde = nlkde
-    } else {
-      nlkde = snapshot[[field]]$nlkde
-    }
     out[[field]]$smoothing = snapshot[[field]]$smoothing
     out[[field]]$kde = kde
-    out[[field]]$nlkde = nlkde
 
     # get positions
     x = snapshot[[field]]$Coordinates
@@ -341,8 +333,8 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
       }
     } else {
       if (kde) {
-        g = cooltools::kde2(x[,1], x[,2], w=weight, xlim=xlim, ylim=ylim, n=c(nx,ny), s=snapshot[[field]]$smoothing/8/dx,
-                 sd.max=snapshot[[field]]$smoothing*2/dx, gamma=nlkde)
+        g = kde2(x[,1], x[,2], w=weight, xlim=xlim, ylim=ylim, n=c(nx,ny), s=snapshot[[field]]$smoothing/8/dx,
+                 sd.max=snapshot[[field]]$smoothing*2/dx)
         out[[field]]$density = g$d
         if (snapshot[[field]]$color.by.property) {
           if (is.null(weight)) {
@@ -350,8 +342,7 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
           } else {
             w = as.vector(snapshot[[field]]$value)*weight
           }
-          g = cooltools::kde2(x[,1], x[,2], w=w, xlim=xlim, ylim=ylim, n=c(nx,ny), s=snapshot[[field]]$smoothing/8/dx, sd.max=snapshot[[field]]$smoothing*2/dx,
-                              gamma=nlkde)
+          g = cooltools::kde2(x[,1], x[,2], w=w, xlim=xlim, ylim=ylim, n=c(nx,ny), s=snapshot[[field]]$smoothing/8/dx, sd.max=snapshot[[field]]$smoothing*2/dx)
           out[[field]]$value = g$d/out[[field]]$density
           out[[field]]$value[!is.finite(out[[field]]$value)] = 0
         }

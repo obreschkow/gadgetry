@@ -1,12 +1,12 @@
 #' Standard spherical mass distributions in astrophysics
 #'
 #' @importFrom graphics hist curve abline
-#' @importFrom stats runif
+#' @importFrom stats runif integrate
 #'
-#' @description Generates functions associated with spherically symmetric halo models. Currently only Hernquist model implemented. Extension planned. Everything is in units dimensionless units where M=R=G=1, where M is the total halo mass, R is the characteristic radius (or truncation radius if no characteristic radius exists) and G is the gravitational constant.
+#' @description Generates functions associated with spherically symmetric halo models. Everything is in units dimensionless units where M=R=G=1, where M is the total halo mass, R is the characteristic radius and G is the gravitational constant.
 #'
-#' @param model name of model. Currently only "Hernquist".
-#' @param rmax truncation radius; profiles are normalized, such that this radius contains the full mass
+#' @param model name of model. Currently available models: "hernquist" (Hernquist 1990), "uniform" (spherical top-hat).
+#' @param rmax truncation radius for models that have an independent characteristic radius in addition to the truncation. If not given, a model-dependent default is assigned. All profiles are normalized, such that the trunction radius contains the full mass.
 #' @param plots logical flag indicating whether to produce a series of test plots
 #' @param rplot maximum plotting radius; only used if plots=TRUE.
 #'
@@ -38,25 +38,49 @@ halomodel = function(model='hernquist', rmax=NULL, plots=FALSE, rplot=10) {
     normalization = ifelse(is.infinite(f$rmax),1,1/(1-(2*f$rmax+1)/(f$rmax+1)^2))
     f$rho = function(r) ifelse(r<=f$rmax,normalization/(2*pi*r*(1+r)^3),0)
 
-    # 1D Probability density dP/dr=4*pi*r^2*rho (since M=1)
-    # is normalised such that integral(density)
+    # 1D Probability density dM/dr=dP/dr=4*pi*r^2*rho (since M=1)
     f$pdf = function(r) ifelse(r<=f$rmax,normalization*2*r/(1+r)^3,0)
 
     # Enclosed mass M(<r)=integral(pdf,0,r)
     f$mass = function(r) ifelse(r<=f$rmax,normalization*(1-(2*r+1)/(r+1)^2),1)
 
-    # Isotropic velocity dispersion (for r<rmax)
+    # Isotropic velocity dispersion from Jeans equation (for r<rmax)
     variance = function(r) r*(1+r)^3*log((1+r)/r)-(r*(25+52*r+42*r^2+12*r^3))/(12*(1+r)) # for rmax=Inf, runs into floating-point issues at r>1e2, seriously r>1e3
     f$sigma = function(r) sqrt(normalization*ifelse(r<=200,variance(r),exp(-1.6152-log(r))))
     f$notes = c(f$notes,'isotropic velocity dispersion sigma only valid for r<rmax')
 
-    # Potential phi(r)=integral(pdf(r)*mass(<r)/r,0,r)+const, (since G=1)
-    # with const defined such that phi vanishes at r=Inf
-    const = ifelse(is.infinite(f$rmax),-1,-1/f$rmax-f$rmax/(1+f$rmax))
-    f$potential = function(r) ifelse(r<=f$rmax,r/(1+r)+const,-1/r)
+    # Potential phi(r)=integral(pdf/r,0,r)+const
+    const = ifelse(is.infinite(f$rmax),-1,-(normalization*f$rmax^2+f$rmax+1)/(f$rmax*(f$rmax+1)))
+    f$potential = function(r) ifelse(r<=f$rmax,normalization*r/(1+r)+const,-1/r)
 
     # Quantile function for 1D PDF
     f$quantile = function(p) (p+sqrt(normalization*p))/(normalization-p)
+
+  } else if (f$model=='uniform') {
+
+    # truncation radius
+    if (!is.null(rmax)) {
+      stop('rmax must not be set. In a spherical top hat, the truncation radius is the characteristic radius, which default to unity.')
+    }
+    f$rmax = 1
+
+    # 3D Density dM/dV
+    f$rho = function(r) ifelse(r<=1,3/(4*pi),0)
+
+    # 1D Probability density dM/dr=dP/dr=4*pi*r^2*rho (since M=1)
+    f$pdf = function(r) ifelse(r<=1,3*r^2,0)
+
+    # Enclosed mass M(<r)=integral(pdf,0,r)
+    f$mass = function(r) ifelse(r<=1,r^3,1)
+
+    # Isotropic velocity dispersion from Jeans equation
+    f$sigma = function(r) ifelse(r<=1,sqrt((1-r^2)/2),0)
+
+    # Potential phi(r)=integral(M(<r)/r^2,0,r)+const
+    f$potential = function(r) ifelse(r<=1,r^2/2-3/2,-1/r)
+
+    # Quantile function for 1D PDF
+    f$quantile = function(p) p^(1/3)
 
   } else {
 
@@ -74,6 +98,14 @@ halomodel = function(model='hernquist', rmax=NULL, plots=FALSE, rplot=10) {
 
   # Local escape velocity [equation true for any spherical mass distribution]
   f$vesc = function(r) sqrt(-2*f$potential(r))
+
+  # Total potential energy
+  y = function(r) f$potential(r)*f$pdf(r)/2
+  f$epot = stats::integrate(y,0,f$rmax)$value
+
+  # Total kinetic energy for pure isotropic dispersion
+  y = function(r) 3*f$sigma(r)^2/2*f$pdf(r) # factor three because of three dimensions
+  f$ekin = stats::integrate(y,0,f$rmax)$value
 
   if (plots) {
 

@@ -7,9 +7,9 @@
 halomodel(model = "hernquist", rmax = NULL, plots = FALSE, rplot = 10)
 }
 \arguments{
-\item{model}{name of model. Currently only "Hernquist".}
+\item{model}{name of model. Currently available models: "hernquist" (Hernquist 1990), "uniform" (spherical top-hat).}
 
-\item{rmax}{truncation radius; profiles are normalized, such that this radius contains the full mass}
+\item{rmax}{truncation radius for models that have an independent characteristic radius in addition to the truncation. If not given, a model-dependent default is assigned. All profiles are normalized, such that the trunction radius contains the full mass.}
 
 \item{plots}{logical flag indicating whether to produce a series of test plots}
 
@@ -19,7 +19,7 @@ halomodel(model = "hernquist", rmax = NULL, plots = FALSE, rplot = 10)
 list of functions for the selected model
 }
 \description{
-Generates functions associated with spherically symmetric halo models. Currently only Hernquist model implemented. Extension planned. Everything is in units dimensionless units where M=R=G=1, where M is the total halo mass, R is the characteristic radius (or truncation radius if no characteristic radius exists) and G is the gravitational constant.
+Generates functions associated with spherically symmetric halo models. Everything is in units dimensionless units where M=R=G=1, where M is the total halo mass, R is the characteristic radius and G is the gravitational constant.
 }
 \examples{
 
