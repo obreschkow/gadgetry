@@ -13,15 +13,14 @@
   depth = NULL,
   taper = FALSE,
   aspect = 1,
-  ngrid = 300,
-  kde = TRUE,
-  smoothing = NULL,
+  npixels = 300,
+  kde = 2,
+  smoothing = 1,
   types = NULL,
   sample.fraction = 1,
   lum = 1,
   gamma = 1,
   shadows = 1,
-  fix.luminosity = FALSE,
   hdcolors = TRUE,
   screen = TRUE,
   pngfile = NULL,
@@ -53,8 +52,9 @@
 \code{density.scaling} = logical flag (default TRUE), specifying whether the brightness is scaled with the particle density if \code{value} is given.\cr
 \code{lum} = overall scaling factor for the color scale.\cr
 \code{gamma} = gamma parameter setting the non-linear conversion between density and brightness/color. The larger the value, the higher the dynamic range.\cr
-\code{kde} = logical flag (default TRUE), whether the particles are smoothed using an adaptive kernel density estimator.\cr
-\code{smoothing} = smoothing scale in simulation units. If not given, a value is set automatically to one percent of the geometric mean of width and height.\cr\cr}
+\code{kde} = integer, setting the density estimation method. 0: Gaussian blur, 1 Fast approximate kernel density estimation, 2: More accurate 3D-density-based local kernel density estimation.\cr
+\code{smoothing} = linear smoothing factor (default 1) to adjust the automatically determined size of the (adaptive or fixed) smoothing kernels.\cr
+\code{n.fix} = optional number specifying a fixed number of particles to use for luminosity normalization; otherwise the number of particles in the field of view are used, which may vary between different snapshots and therefore lead to brightness fluctuations between snapshots (e.g. in movies).\cr\cr}
 
 \item{center}{optional 3-vector specifying the coordinate at the center of the plot. The default is the geometric center (= center of mass, if all particle masses are equal).}
 
@@ -70,7 +70,7 @@
 
 \item{aspect}{aspect ratio (= width/height).}
 
-\item{ngrid}{number of grid cells per side in the output image. If the image is not square ngrid is interpreted as the geometric mean between the horizontal and the vertical number of pixels, such that the total number of pixels remains about ngrid^2.}
+\item{npixels}{number of grid cells per side in the output image. If the image is not square npixels is interpreted as the geometric mean between the horizontal and the vertical number of pixels, such that the total number of pixels remains about npixels^2.}
 
 \item{kde}{default value used in \code{dat$PartType#} (see above).}
 
@@ -85,8 +85,6 @@
 \item{gamma}{default value used in \code{dat$PartType#} (see above).}
 
 \item{shadows}{overall contrast value.}
-
-\item{fix.luminosity}{logical flag specifying whether the brightness should scale with the number of particles in the field of view. Set this to \code{FALSE} to avoid luminosity fluctuations in movies.}
 
 \item{hdcolors}{logical flag. If TRUE, input color scales are slightly smoothed to avoid spurious slight color jumps steps due to 8-bit color representation.}
 

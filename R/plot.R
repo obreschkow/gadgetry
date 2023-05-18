@@ -14,8 +14,9 @@
 #' \code{density.scaling} = logical flag (default TRUE), specifying whether the brightness is scaled with the particle density if \code{value} is given.\cr
 #' \code{lum} = overall scaling factor for the color scale.\cr
 #' \code{gamma} = gamma parameter setting the non-linear conversion between density and brightness/color. The larger the value, the higher the dynamic range.\cr
-#' \code{kde} = logical flag (default TRUE), whether the particles are smoothed using an adaptive kernel density estimator.\cr
-#' \code{smoothing} = smoothing scale in simulation units. If not given, a value is set automatically to one percent of the geometric mean of width and height.\cr\cr
+#' \code{kde} = integer, setting the density estimation method. 0: Gaussian blur, 1 Fast approximate kernel density estimation, 2: More accurate 3D-density-based local kernel density estimation.\cr
+#' \code{smoothing} = linear smoothing factor (default 1) to adjust the automatically determined size of the (adaptive or fixed) smoothing kernels.\cr
+#' \code{n.fix} = optional number specifying a fixed number of particles to use for luminosity normalization; otherwise the number of particles in the field of view are used, which may vary between different snapshots and therefore lead to brightness fluctuations between snapshots (e.g. in movies).\cr\cr
 #' @param types vector specifying the particle types to be displayed. These numbers must correspond to the # in the sublists PartType#. If not given, all particle species are shown.
 #' @param center optional 3-vector specifying the coordinate at the center of the plot. The default is the geometric center (= center of mass, if all particle masses are equal).
 #' @param rotation either an integer (1-6), a 3-vector or a 3-by-3 matrix, specifying a rotation of the 3D particle positions. In case of an integer: 1=(x,y)-plane, 2=(y,z)-plane, 3=(x,z)-plane, 4=(qmax,qmin)-plane, 5=(qmax,qmid)-plane, 6=(qmid,qmin)-plane, where qmax/qmid/qmin are the eigenvectors of the particle-quadrupole, associated with the maximum/middle/minimum eigenvalues, respectively. If \code{rotation} is a vector, its direction specifies the rotation axis and its norm the rotation angle in radians in the positive geometric sense.
@@ -24,8 +25,7 @@
 #' @param depth optional depth of the slice/field to be shown. In the case of an orthogonal projection (fov=NULL) all particles that lie within -depth/2 to +depth/2 are shown. In the case of a stereographic projection, all particles within a distance \code{depth} from the observer (placed at \code{center}) are shown.
 #' @param taper logical flag, which is only used if a finite \code{depth} is specified. If \code{taper} is TRUE, the particles are faded out towards the edges of the depth range, using a cubic spline kernel (Monaghan 1992), whose characteristic width corresponds to \code{depth}.
 #' @param aspect aspect ratio (= width/height).
-#' @param ngrid number of grid cells per side in the output image. If the image is not square ngrid is interpreted as the geometric mean between the horizontal and the vertical number of pixels, such that the total number of pixels remains about ngrid^2.
-#' @param fix.luminosity logical flag specifying whether the brightness should scale with the number of particles in the field of view. Set this to \code{FALSE} to avoid luminosity fluctuations in movies.
+#' @param npixels number of grid cells per side in the output image. If the image is not square npixels is interpreted as the geometric mean between the horizontal and the vertical number of pixels, such that the total number of pixels remains about npixels^2.
 #' @param hdcolors logical flag. If TRUE, input color scales are slightly smoothed to avoid spurious slight color jumps steps due to 8-bit color representation.
 #' @param lum default value used in \code{dat$PartType#} (see above).
 #' @param gamma default value used in \code{dat$PartType#} (see above).
@@ -80,9 +80,9 @@
 #' @method plot snapshot
 #' @export
 plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth=NULL, taper=FALSE,
-                         aspect=1, ngrid=300, kde=TRUE, smoothing=NULL,
+                         aspect=1, npixels=300, kde=2, smoothing=1,
                          types=NULL, sample.fraction=1,
-                         lum=1, gamma=1, shadows=1, fix.luminosity=FALSE, hdcolors=TRUE,
+                         lum=1, gamma=1, shadows=1, hdcolors=TRUE,
                          screen=TRUE, pngfile=NULL, pdffile=NULL,
                          title=NULL, title.origin = NULL,
                          arrows = TRUE, arrow.origin = NULL, arrow.length = NULL, arrow.lwd = 1.5,
@@ -237,13 +237,10 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
   x = NULL # to free up memory
 
   # prepare grid
-  nx = round(ngrid*width/mean.length)
-  ny = round(ngrid*height/mean.length)
+  nx = round(npixels*width/mean.length)
+  ny = round(npixels*height/mean.length)
   if (max(nx,ny)>8000) stop('Not more than 8000 pixels allowed on each side.')
   dx = width/nx # pixel size in simulation length units
-
-  # determine default smoothing
-  if (is.null(smoothing)) smoothing = mean.length*0.005 # [length units of sim]
 
   # put particles on a grid
   for (type in types) {
@@ -252,13 +249,7 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
 
     # specify smoothing kernel
     if (is.null(snapshot[[field]]$smoothing)) snapshot[[field]]$smoothing = smoothing
-    if (is.null(snapshot[[field]]$kde)) {
-      kde = kde
-    } else {
-      kde = snapshot[[field]]$kde
-    }
-    out[[field]]$smoothing = snapshot[[field]]$smoothing
-    out[[field]]$kde = kde
+    if (is.null(snapshot[[field]]$kde)) snapshot[[field]]$kde = kde
 
     # get positions
     x = snapshot[[field]]$Coordinates
@@ -332,27 +323,29 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
         out[[field]]$value[!is.finite(out[[field]]$value)] = 0
       }
     } else {
-      if (kde) {
-        g = kde2(x[,1], x[,2], w=weight, xlim=xlim, ylim=ylim, n=c(nx,ny), s=snapshot[[field]]$smoothing/8/dx,
-                 sd.max=snapshot[[field]]$smoothing*2/dx)
-        out[[field]]$density = g$d
+      if (snapshot[[field]]$kde%in%c(1,2)) {
+        algorithm = c('fast','nn')[snapshot[[field]]$kde]
+        g = cooltools::kde2(x[,1:2], w=weight, xlim=xlim, ylim=ylim, n=nx, smoothing=snapshot[[field]]$smoothing, algorithm=algorithm)
+        out[[field]]$density = g$field
         if (snapshot[[field]]$color.by.property) {
           if (is.null(weight)) {
             w = as.vector(snapshot[[field]]$value)
           } else {
             w = as.vector(snapshot[[field]]$value)*weight
           }
-          g = cooltools::kde2(x[,1], x[,2], w=w, xlim=xlim, ylim=ylim, n=c(nx,ny), s=snapshot[[field]]$smoothing/8/dx, sd.max=snapshot[[field]]$smoothing*2/dx)
-          out[[field]]$value = g$d/out[[field]]$density
+          g = cooltools::kde2(x[,1:2], w=w, xlim=xlim, ylim=ylim, n=nx, smoothing=snapshot[[field]]$smoothing, algorithm=algorithm)
+          out[[field]]$value = g$field/out[[field]]$density
           out[[field]]$value[!is.finite(out[[field]]$value)] = 0
         }
-      } else {
+      } else if (snapshot[[field]]$kde==0) {
         if (!requireNamespace("EBImage", quietly=TRUE)) {
-          stop('Package EBImage is needed in function plot.gadget if kde=FALSE. Consider setting kde=TRUE if you cannot install EBImage.')
+          stop('Package EBImage is needed in function plot.gadget if kde=0. Consider setting kde=1 or 2 if you cannot install EBImage.')
         }
-        g = cooltools::griddata(x[,1:2], w=weight, min=c(xlim[1],ylim[1]), max=c(xlim[2],ylim[2]), n=c(nx,ny))
+        g = cooltools::griddata(x[,1:2], w=weight, min=c(xlim[1],ylim[1]), max=c(xlim[2],ylim[2]), n=c(nx,ny),type='density')
         sigmamax = floor((min(nx,ny)-1)/6) # maximum allowed filter size for gblur
-        out[[field]]$density = EBImage::gblur(g$field, min(sigmamax,snapshot[[field]]$smoothing/dx))
+        sigma.default = min(sigmamax,2*sqrt(nx*ny/(sum(g$field)*dx^2)))
+        sigma = min(sigmamax,snapshot[[field]]$smoothing*sigma.default)
+        out[[field]]$density = EBImage::gblur(g$field, sigma)
         if (snapshot[[field]]$color.by.property) {
           if (is.null(weight)) {
             w = as.vector(snapshot[[field]]$value)
@@ -360,14 +353,16 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
             w = as.vector(snapshot[[field]]$value)*weight
           }
           g = cooltools::griddata(x[,1:2], w=w, min=c(xlim[1],ylim[1]), max=c(xlim[2],ylim[2]), n=c(nx,ny))
-          out[[field]]$value = EBImage::gblur(g$field, min(sigmamax,snapshot[[field]]$smoothing/dx))/out[[field]]$density
+          out[[field]]$value = EBImage::gblur(g$field, sigma)/out[[field]]$density
           out[[field]]$value[!is.finite(out[[field]]$value)] = 0
         }
+      } else {
+        stop('kde value must be 0, 1 or 2')
       }
     }
     out[[field]]$density[out[[field]]$density<0] = 0
     if (snapshot[[field]]$color.by.property) out[[field]]$value[out[[field]]$value<0] = 0
-    out[[field]]$n.eff = sum(out[[field]]$density)
+    out[[field]]$n.eff = sum(out[[field]]$density)*dx^2
   }
 
   # turn density and value matrices into RGB layers
@@ -382,7 +377,12 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
       layer = layer+1
 
       # convert density to brightness
-      linear.scaling = 0.1*snapshot[[field]]$lum*ngrid^2/max(1,ifelse(fix.luminosity,out[[field]]$n.tot,out[[field]]$n.eff)) # linear luminosity scaling factor
+      overall.lum.scaling = 50
+      if (is.null(snapshot[[field]]$n.fix)) {
+        linear.scaling = overall.lum.scaling*snapshot[[field]]$lum/max(1,out[[field]]$n.eff)
+      } else {
+        linear.scaling = overall.lum.scaling*snapshot[[field]]$lum/max(1,snapshot[[field]]$n.fix)
+      }
       brightness = (linear.scaling*out[[field]]$density)^snapshot[[field]]$gamma
 
       # if no values provided use density as values
@@ -486,7 +486,7 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
 
   # return results
   out$rgb = img
-  out$header = list(xlim=xlim, ylim=ylim, center=center, rotationmatrix=rot, col)
+  out$header = list(xlim=xlim, ylim=ylim, center=center, rotationmatrix=rot)
   invisible(out)
 
 }

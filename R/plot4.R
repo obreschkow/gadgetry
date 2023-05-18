@@ -52,7 +52,6 @@ plot4 = function(snapshot, rotations=c(2,4,1,3), screen = TRUE, pdffile = NULL, 
 
     if (make) {
 
-      if (mode==1) grDevices::graphics.off()
       par(pty='s', mar=c(0,0,0,0))
       cooltools::nplot(xlim=c(0,1), ylim=c(0,1))
       p = par()$plt
