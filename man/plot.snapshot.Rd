@@ -54,7 +54,7 @@
 \code{gamma} = gamma parameter setting the non-linear conversion between density and brightness/color. The larger the value, the higher the dynamic range.\cr
 \code{kde} = integer, setting the density estimation method. 0: Gaussian blur, 1 Fast approximate kernel density estimation, 2: More accurate 3D-density-based local kernel density estimation.\cr
 \code{smoothing} = linear smoothing factor (default 1) to adjust the automatically determined size of the (adaptive or fixed) smoothing kernels.\cr
-\code{n.fix} = optional number specifying a fixed number of particles to use for luminosity normalization; otherwise the number of particles in the field of view are used, which may vary between different snapshots and therefore lead to brightness fluctuations between snapshots (e.g. in movies).\cr\cr}
+\code{ref.density} = optional number specifying a fixed reference density (number of particles per area, in units of 1/(length unit)^2) used for luminosity normalization; fixing this value allows to suppress brightness fluctuations between snapshots (e.g. in movies).\cr\cr}
 
 \item{center}{optional 3-vector specifying the coordinate at the center of the plot. The default is the geometric center (= center of mass, if all particle masses are equal).}
 

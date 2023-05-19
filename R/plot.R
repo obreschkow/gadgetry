@@ -16,7 +16,7 @@
 #' \code{gamma} = gamma parameter setting the non-linear conversion between density and brightness/color. The larger the value, the higher the dynamic range.\cr
 #' \code{kde} = integer, setting the density estimation method. 0: Gaussian blur, 1 Fast approximate kernel density estimation, 2: More accurate 3D-density-based local kernel density estimation.\cr
 #' \code{smoothing} = linear smoothing factor (default 1) to adjust the automatically determined size of the (adaptive or fixed) smoothing kernels.\cr
-#' \code{n.fix} = optional number specifying a fixed number of particles to use for luminosity normalization; otherwise the number of particles in the field of view are used, which may vary between different snapshots and therefore lead to brightness fluctuations between snapshots (e.g. in movies).\cr\cr
+#' \code{ref.density} = optional number specifying a fixed reference density (number of particles per area, in units of 1/(length unit)^2) used for luminosity normalization; fixing this value allows to suppress brightness fluctuations between snapshots (e.g. in movies).\cr\cr
 #' @param types vector specifying the particle types to be displayed. These numbers must correspond to the # in the sublists PartType#. If not given, all particle species are shown.
 #' @param center optional 3-vector specifying the coordinate at the center of the plot. The default is the geometric center (= center of mass, if all particle masses are equal).
 #' @param rotation either an integer (1-6), a 3-vector or a 3-by-3 matrix, specifying a rotation of the 3D particle positions. In case of an integer: 1=(x,y)-plane, 2=(y,z)-plane, 3=(x,z)-plane, 4=(qmax,qmin)-plane, 5=(qmax,qmid)-plane, 6=(qmid,qmin)-plane, where qmax/qmid/qmin are the eigenvectors of the particle-quadrupole, associated with the maximum/middle/minimum eigenvalues, respectively. If \code{rotation} is a vector, its direction specifies the rotation axis and its norm the rotation angle in radians in the positive geometric sense.
@@ -377,13 +377,14 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
     layer = layer+1
 
     # convert density to brightness
-    overall.lum.scaling = 50
-    if (is.null(snapshot[[field]]$n.fix)) {
-      linear.scaling = overall.lum.scaling*snapshot[[field]]$lum/max(1e2,out[[field]]$n.eff)
+    filling.factor = sum(out[[field]]$density>mean(out[[field]]$density)*0.1)/npixels^2
+    min.density.mean = 1/(nx*ny*dx^2) # mean density for one particle
+    if (is.null(snapshot[[field]]$ref.density)) {
+      linear.scaling = 1/max(100*min.density.mean,mean(out[[field]]$density))*filling.factor
     } else {
-      linear.scaling = overall.lum.scaling*snapshot[[field]]$lum/max(1,snapshot[[field]]$n.fix)
+      linear.scaling = 1/max(min.density.mean,snapshot[[field]]$ref.density)
     }
-    brightness = (linear.scaling*out[[field]]$density)^snapshot[[field]]$gamma
+    brightness = (snapshot[[field]]$lum*linear.scaling*out[[field]]$density)^snapshot[[field]]$gamma
 
     # if no values provided use density as values
     if (snapshot[[field]]$color.by.property) {
