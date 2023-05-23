@@ -125,6 +125,10 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
     if (is.null(snapshot[[field]]$lum)) snapshot[[field]]$lum=lum
     if (is.null(snapshot[[field]]$gamma)) snapshot[[field]]$gamma=gamma
 
+    # specify smoothing kernel
+    if (is.null(snapshot[[field]]$smoothing)) snapshot[[field]]$smoothing = smoothing
+    if (is.null(snapshot[[field]]$kde)) snapshot[[field]]$kde = kde
+
     # handle values
     snapshot[[field]]$color.by.property = !is.null(snapshot[[field]]$value)
     if (snapshot[[field]]$color.by.property) {
@@ -247,10 +251,6 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
 
     field = sprintf('PartType%d',type)
 
-    # specify smoothing kernel
-    if (is.null(snapshot[[field]]$smoothing)) snapshot[[field]]$smoothing = smoothing
-    if (is.null(snapshot[[field]]$kde)) snapshot[[field]]$kde = kde
-
     # get positions
     x = snapshot[[field]]$Coordinates
     if (!is.array(x)) x=rbind(x)
@@ -262,6 +262,8 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
         sel = sample(dim(x)[1],nsub)
         x = x[sel,]
         if (snapshot[[field]]$color.by.property) snapshot[[field]]$value=snapshot[[field]]$value[sel]
+        if (!is.null(snapshot[[field]]$Density)) snapshot[[field]]$Density=snapshot[[field]]$Density[sel]
+        if (!is.null(snapshot[[field]]$Masses)) snapshot[[field]]$Masses=snapshot[[field]]$Masses[sel]
       }
     }
 
@@ -289,35 +291,36 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
     if (!is.null(depth)) {
       if (is.null(fov)) {
         if (taper) {
-          if (snapshot[[field]]$color.by.property) snapshot[[field]]$value=snapshot[[field]]$value[abs(x[,3])<=depth]
-          x = x[abs(x[,3])<=depth,]
+          sel = which(abs(x[,3])<=depth)
           weight = kernel(abs(x[,3]),depth/2)
         } else {
-          if (snapshot[[field]]$color.by.property) snapshot[[field]]$value=snapshot[[field]]$value[abs(x[,3])<=depth/2]
-          x = x[abs(x[,3])<=depth/2,]
+          sel = which(abs(x[,3])<=depth/2)
         }
       } else {
         if (taper) {
-          if (snapshot[[field]]$color.by.property) snapshot[[field]]$value=snapshot[[field]]$value[distance<=2*depth]
-          x = x[distance<=2*depth,]
-          distance = distance[distance<=2*depth]
+          sel = which(distance<=2*depth)
+          distance = distance[sel]
           weight = kernel(distance,depth)
         } else {
-          if (snapshot[[field]]$color.by.property) snapshot[[field]]$value=snapshot[[field]]$value[distance<=depth]
-          x = x[distance<=depth,]
+          sel = which(distance<=depth)
         }
       }
+      x = x[sel,]
+      if (!is.null(snapshot[[field]]$Density)) snapshot[[field]]$Density=snapshot[[field]]$Density[sel]
+      if (!is.null(snapshot[[field]]$Masses)) snapshot[[field]]$Masses=snapshot[[field]]$Masses[sel]
     }
 
     #  raster particle field
     sigma = NULL
     if (snapshot[[field]]$kde==4) {
-      if (is.null(snapshot[[field]]$Density)) {
+      if (is.null(snapshot[[field]]$Density) | is.null(snapshot[[field]]$Masses)) {
         snapshot[[field]]$kde = 3
       } else {
         sigma = (snapshot[[field]]$Masses/snapshot[[field]]$Density)^(1/3)
       }
     }
+    print(length(sigma))
+    print(dim(x))
     out[[field]]$density = cooltools::kde2(rbind(x[,1:2]), w=weight, xlim=xlim, ylim=ylim, n=nx, smoothing=snapshot[[field]]$smoothing,
                                 sigma=sigma, algorithm=snapshot[[field]]$kde)$field
     out[[field]]$density[out[[field]]$density<0] = 0
