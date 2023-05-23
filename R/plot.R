@@ -14,7 +14,7 @@
 #' \code{density.scaling} = logical flag (default TRUE), specifying whether the brightness is scaled with the particle density if \code{value} is given.\cr
 #' \code{lum} = overall scaling factor for the color scale.\cr
 #' \code{gamma} = gamma parameter setting the non-linear conversion between density and brightness/color. The larger the value, the higher the dynamic range.\cr
-#' \code{kde} = integer, setting the density estimation method. 0: Gaussian blur, 1 Fast approximate kernel density estimation, 2: More accurate 3D-density-based local kernel density estimation.\cr
+#' \code{kde} = integer, setting the density estimation method. 0: Simple gridding, 1: Gaussian blur, 2: Fast approximate kernel density estimation relying on 2D densities, 3: More accurate 3D-kernel-density estimation, 4: Adaptive smoothing based on densities of particles (requires Density and Masses to be provided for the particle type, otherwise the 3rd algorithm will be used as default).\cr
 #' \code{smoothing} = linear smoothing factor (default 1) to adjust the automatically determined size of the (adaptive or fixed) smoothing kernels.\cr
 #' \code{ref.density} = optional number specifying a fixed reference density (number of particles per area, in units of 1/(length unit)^2) used for luminosity normalization; fixing this value allows to suppress brightness fluctuations between snapshots (e.g. in movies).\cr\cr
 #' @param types vector specifying the particle types to be displayed. These numbers must correspond to the # in the sublists PartType#. If not given, all particle species are shown.
@@ -80,7 +80,7 @@
 #' @method plot snapshot
 #' @export
 plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth=NULL, taper=FALSE,
-                         aspect=1, npixels=300, kde=2, smoothing=1,
+                         aspect=1, npixels=300, kde=3, smoothing=1,
                          types=NULL, sample.fraction=1,
                          lum=1, gamma=1, shadows=1, hdcolors=TRUE,
                          screen=TRUE, pngfile=NULL, pdffile=NULL,
@@ -309,61 +309,32 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
       }
     }
 
-    #  raster particle data
-    if (snapshot[[field]]$smoothing==0) {
-      g = cooltools::griddata(rbind(x[,1:2]), w=weight, min=c(xlim[1],ylim[1]), max=c(xlim[2],ylim[2]), n=c(nx,ny),type='density')
-      out[[field]]$density = g$field
-      if (snapshot[[field]]$color.by.property) {
-        if (is.null(weight)) {
-          w = as.vector(snapshot[[field]]$value)
-        } else {
-          w = as.vector(snapshot[[field]]$value)*weight
-        }
-        g = cooltools::griddata(rbind(x[,1:2]), w=w, min=c(xlim[1],ylim[1]), max=c(xlim[2],ylim[2]), n=c(nx,ny),type='density')
-        out[[field]]$value = g$field/out[[field]]$density
-        out[[field]]$value[!is.finite(out[[field]]$value)] = 0
-      }
-    } else {
-      if (snapshot[[field]]$kde%in%c(1,2)) {
-        algorithm = c('fast','nn')[snapshot[[field]]$kde]
-        g = cooltools::kde2(rbind(x[,1:2]), w=weight, xlim=xlim, ylim=ylim, n=nx, smoothing=snapshot[[field]]$smoothing, algorithm=algorithm)
-        out[[field]]$density = g$field
-        if (snapshot[[field]]$color.by.property) {
-          if (is.null(weight)) {
-            w = as.vector(snapshot[[field]]$value)
-          } else {
-            w = as.vector(snapshot[[field]]$value)*weight
-          }
-          g = cooltools::kde2(rbind(x[,1:2]), w=w, xlim=xlim, ylim=ylim, n=nx, smoothing=snapshot[[field]]$smoothing, algorithm=algorithm)
-          out[[field]]$value = g$field/out[[field]]$density
-          out[[field]]$value[!is.finite(out[[field]]$value)] = 0
-        }
-      } else if (snapshot[[field]]$kde==0) {
-        if (!requireNamespace("EBImage", quietly=TRUE)) {
-          stop('Package EBImage is needed in function plot.gadget if kde=0. Consider setting kde=1 or 2 if you cannot install EBImage.')
-        }
-        g = cooltools::griddata(rbind(x[,1:2]), w=weight, min=c(xlim[1],ylim[1]), max=c(xlim[2],ylim[2]), n=c(nx,ny),type='density')
-        sigmamax = floor((min(nx,ny)-1)/6) # maximum allowed filter size for gblur
-        sigma.default = min(sigmamax,2*sqrt(nx*ny/(sum(g$field)*dx^2)))
-        sigma = min(sigmamax,snapshot[[field]]$smoothing*sigma.default)
-        out[[field]]$density = EBImage::gblur(g$field, sigma)
-        if (snapshot[[field]]$color.by.property) {
-          if (is.null(weight)) {
-            w = as.vector(snapshot[[field]]$value)
-          } else {
-            w = as.vector(snapshot[[field]]$value)*weight
-          }
-          g = cooltools::griddata(rbind(x[,1:2]), w=w, min=c(xlim[1],ylim[1]), max=c(xlim[2],ylim[2]), n=c(nx,ny),type='density')
-          out[[field]]$value = EBImage::gblur(g$field, sigma)/out[[field]]$density
-          out[[field]]$value[!is.finite(out[[field]]$value)] = 0
-        }
+    #  raster particle field
+    sigma = NULL
+    if (snapshot[[field]]$kde==4) {
+      if (is.null(snapshot[[field]]$Density)) {
+        snapshot[[field]]$kde = 3
       } else {
-        stop('kde value must be 0, 1 or 2')
+        sigma = (snapshot[[field]]$Masses/snapshot[[field]]$Density)^(1/3)
       }
     }
+    out[[field]]$density = cooltools::kde2(rbind(x[,1:2]), w=weight, xlim=xlim, ylim=ylim, n=nx, smoothing=snapshot[[field]]$smoothing,
+                                sigma=sigma, algorithm=snapshot[[field]]$kde)$field
     out[[field]]$density[out[[field]]$density<0] = 0
-    if (snapshot[[field]]$color.by.property) out[[field]]$value[out[[field]]$value<0] = 0
     out[[field]]$n.eff = sum(out[[field]]$density)*dx^2
+
+    # raster particle values (optional)
+    if (snapshot[[field]]$color.by.property) {
+      if (is.null(weight)) {
+        w = as.vector(snapshot[[field]]$value)
+      } else {
+        w = as.vector(snapshot[[field]]$value)*weight
+      }
+      out[[field]]$value = cooltools::kde2(rbind(x[,1:2]), w=w, xlim=xlim, ylim=ylim, n=nx, smoothing=snapshot[[field]]$smoothing, algorithm=snapshot[[field]]$kde)$field/out[[field]]$density
+      out[[field]]$value[!is.finite(out[[field]]$value)] = 0
+      out[[field]]$value[out[[field]]$value<0] = 0
+    }
+
   }
 
   # turn density and value matrices into RGB layers
@@ -384,7 +355,7 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
     } else {
       linear.scaling = 1/max(min.density.mean,snapshot[[field]]$ref.density)
     }
-    brightness = (snapshot[[field]]$lum*linear.scaling*out[[field]]$density)^snapshot[[field]]$gamma
+    brightness = 0.3*(snapshot[[field]]$lum*linear.scaling*out[[field]]$density)^snapshot[[field]]$gamma
 
     # if no values provided use density as values
     if (snapshot[[field]]$color.by.property) {

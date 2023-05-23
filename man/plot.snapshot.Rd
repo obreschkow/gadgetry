@@ -14,7 +14,7 @@
   taper = FALSE,
   aspect = 1,
   npixels = 300,
-  kde = 2,
+  kde = 3,
   smoothing = 1,
   types = NULL,
   sample.fraction = 1,
@@ -52,7 +52,7 @@
 \code{density.scaling} = logical flag (default TRUE), specifying whether the brightness is scaled with the particle density if \code{value} is given.\cr
 \code{lum} = overall scaling factor for the color scale.\cr
 \code{gamma} = gamma parameter setting the non-linear conversion between density and brightness/color. The larger the value, the higher the dynamic range.\cr
-\code{kde} = integer, setting the density estimation method. 0: Gaussian blur, 1 Fast approximate kernel density estimation, 2: More accurate 3D-density-based local kernel density estimation.\cr
+\code{kde} = integer, setting the density estimation method. 0: Simple gridding, 1: Gaussian blur, 2: Fast approximate kernel density estimation relying on 2D densities, 3: More accurate 3D-kernel-density estimation, 4: Adaptive smoothing based on densities of particles (requires Density and Masses to be provided for the particle type, otherwise the 3rd algorithm will be used as default).\cr
 \code{smoothing} = linear smoothing factor (default 1) to adjust the automatically determined size of the (adaptive or fixed) smoothing kernels.\cr
 \code{ref.density} = optional number specifying a fixed reference density (number of particles per area, in units of 1/(length unit)^2) used for luminosity normalization; fixing this value allows to suppress brightness fluctuations between snapshots (e.g. in movies).\cr\cr}
 
