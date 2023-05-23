@@ -319,8 +319,6 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
         sigma = (snapshot[[field]]$Masses/snapshot[[field]]$Density)^(1/3)
       }
     }
-    print(length(sigma))
-    print(dim(x))
     out[[field]]$density = cooltools::kde2(rbind(x[,1:2]), w=weight, xlim=xlim, ylim=ylim, n=nx, smoothing=snapshot[[field]]$smoothing,
                                 sigma=sigma, algorithm=snapshot[[field]]$kde)$field
     out[[field]]$density[out[[field]]$density<0] = 0
