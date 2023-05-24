@@ -7,12 +7,12 @@
 snapshotinterp(
   sn0,
   sn1,
-  t0 = 0,
-  t1 = 1,
-  ti = 0.5,
+  f = 0.5,
+  t0 = NULL,
+  t1 = NULL,
   usevelocities = TRUE,
   v0factor = 1,
-  v1factor = NULL,
+  v1factor = v0factor,
   afield = NULL,
   dt = NULL
 )
@@ -22,17 +22,17 @@ snapshotinterp(
 
 \item{sn1}{second gadget snapshot}
 
-\item{t0}{time of first snapshot}
+\item{f}{interpolation time: 0 corresponds to time t0, 1 to time t1; should be within [0,1]}
 
-\item{t1}{time of second snapshot}
+\item{t0}{time of first snapshot, if not given it is extracted from the header of sn0}
 
-\item{ti}{time of interpolated output snapshot. Values outside the range [t0,t1] lead to an extrapolation.}
+\item{t1}{time of second snapshot, if not given it is extracted from the header of sn1}
 
 \item{usevelocities}{logical flag. If TRUE, velocities are used to improve the interpolation of positions.}
 
 \item{v0factor}{factor to be applied to velocities of sn0 to convert to length/time units of the snapshot coordinates and the t0/t1/ti times.}
 
-\item{v1factor}{factor to be applied to velocities of sn1 to convert to length/time units of the snapshot coordinates and the t0/t1/ti times. If not provided, this will be set equal to \code{v1factor}.}
+\item{v1factor}{factor to be applied to velocities of sn1 to convert to length/time units of the snapshot coordinates and the t0/t1/ti times.}
 
 \item{afield}{optional acceleration field for leapfrog integration. This must be a function of a n-by-3 array representing n position vectors, which returns an n-by-3 array with the n acceleration vectors in the same length and time units as the snapshot coordinates and t0/t1/ti times.}
 
