@@ -275,9 +275,12 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
 
     # stereographic projection
     if (!is.null(fov)) {
-      if (snapshot[[field]]$color.by.property) snapshot[[field]]$value=snapshot[[field]]$value[x[,3]>0]
+      sel = which(x[,3]>0)
+      if (snapshot[[field]]$color.by.property) snapshot[[field]]$value=snapshot[[field]]$value[sel]
+      if (!is.null(snapshot[[field]]$Density)) snapshot[[field]]$Density=snapshot[[field]]$Density[sel]
+      if (!is.null(snapshot[[field]]$Masses)) snapshot[[field]]$Masses=snapshot[[field]]$Masses[sel]
       stretch = width/2/tan(fov/180*pi/2)
-      x = x[x[,3]>0,]
+      x = x[sel,]
       distance = vectornorm(x)
       x = x[,1:2]/x[,3]*stretch
     }
@@ -306,6 +309,7 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
         }
       }
       x = x[sel,]
+      if (snapshot[[field]]$color.by.property) snapshot[[field]]$value=snapshot[[field]]$value[sel]
       if (!is.null(snapshot[[field]]$Density)) snapshot[[field]]$Density=snapshot[[field]]$Density[sel]
       if (!is.null(snapshot[[field]]$Masses)) snapshot[[field]]$Masses=snapshot[[field]]$Masses[sel]
     }

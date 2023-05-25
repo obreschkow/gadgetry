@@ -1,5 +1,7 @@
 #' Interpolate between Gadget snapshots
 #'
+#' @importFrom pointr ptr
+#'
 #' @description Interpolate/extrapolate between adjacent Gadget snapshots, building on the interpolation routine \code{\link{particleinterp}}. The ordering of the particles follows that of the nearest snapshot, and if some particles change their species between the two snapshots, the interpolated snapshot uses the species of the nearest snapshot.
 #'
 #' @param sn0 first gadget snapshot
@@ -23,17 +25,23 @@ snapshotinterp = function(sn0, sn1, f=0.5, t0=NULL, t1=NULL,
                           usevelocities=TRUE, v0factor=1, v1factor=v0factor,
                           afield=NULL, dt=NULL) {
 
-  if (f==0) {
+  if (f<=0) {
 
-    sni = sn0
+    pointr::ptr('snmaster','sn0')
 
-  } else if (f==1) {
+  } else if (f>=1) {
 
-    sni = sn1
+    pointr::ptr('snmaster','sn1')
 
   } else {
 
-    # get times
+    # determine which snapshot is considered the master that
+    # defines the ordering of particles and their species
+    master = ifelse(f<0.5,0,1)
+    pointr::ptr('snmaster',sprintf('sn%d',master))
+    pointr::ptr('snslave',sprintf('sn%d',1-master))
+
+    # get start and end times
     if (is.null(t0)) {
       if (is.null(sn0$Header$Time)) {
         stop('sn0$Header$Time missing; provide value of t0')
@@ -49,38 +57,31 @@ snapshotinterp = function(sn0, sn1, f=0.5, t0=NULL, t1=NULL,
       }
     }
 
-    # make master snapshot (sn[[master]]) and slave snapshot (sn[[slave]]), such that the interpolated sn is closer to the master
-    sn = list(sn0,sn1)
-    sn0 = sn1 = NULL
-    master = ifelse(f<0.5,1,2)
-    slave = 3-master
-
-    # copy master snapshot to interpolated snapshot
-    sni = sn[[master]]
-
-    # sort particles of slave in order of master
-    idmaster = allpart(sn[[master]],'ParticleIDs')
-    idslave = allpart(sn[[slave]],'ParticleIDs')
-    indexslave = order(idslave)[idmaster]
-    if (any(idmaster!=idslave[indexslave])) stop('the two snapshots do not contain the same particle IDs')
+    # interpolate time
+    ti = t0*(1-f)+t1*f
+    snmaster$Header$Time = ti
 
     # extract coordinates and velocities into simple arrays
-    if (master==1) {
-      x0 = allpart(sn[[1]],'Coordinates')
-      x1 = allpart(sn[[2]],'Coordinates')[indexslave,]
-      v0 = allpart(sn[[1]],'Velocities')*v0factor
-      v1 = allpart(sn[[2]],'Velocities')[indexslave,]*v1factor
+    x0 = allpart(sn0,'Coordinates')
+    x1 = allpart(sn1,'Coordinates')
+    v0 = allpart(sn0,'Velocities')*v0factor
+    v1 = allpart(sn1,'Velocities')*v1factor
+
+    # sort particles of slave in order of master
+    idmaster = allpart(snmaster,'ParticleIDs')
+    idslave = allpart(snslave,'ParticleIDs')
+    if (length(idmaster)!=length(idslave)) stop('both snapshots must have the same number of particles in current implementation')
+    indexslave = order(idslave)[idmaster]
+    if (any(idmaster!=idslave[indexslave])) stop('the two snapshots do not contain the same particle IDs')
+    if (master==0) {
+      x1 = x1[indexslave,]
+      v1 = v1[indexslave,]
     } else {
-      x0 = allpart(sn[[1]],'Coordinates')[indexslave,]
-      x1 = allpart(sn[[2]],'Coordinates')
-      v0 = allpart(sn[[1]],'Velocities')[indexslave,]*v0factor
-      v1 = allpart(sn[[2]],'Velocities')*v1factor
+      x0 = x0[indexslave,]
+      v0 = v0[indexslave,]
     }
-    if (length(unique(c(dim(x0)[1],dim(x1)[1],dim(v0)[1],dim(v1)[1])))!=1) stop('Missing coordinates/velocities')
 
     # interpolate positions & velocities
-    ti = t0*(1-f)+t1*f
-    sni$Header$Time = ti
     if (usevelocities) {
       p = particleinterp(x0=x0,x1=x1,t0=t0,t1=t1,ti=ti,v0=v0,v1=v1,afield=afield,dt=dt)
     } else {
@@ -92,30 +93,78 @@ snapshotinterp = function(sn0, sn1, f=0.5, t0=NULL, t1=NULL,
     p$v = p$v/vifactor
 
     # replace positions and velocities for interpolated values
+    # and interpolate all other properties
     n = 0
     for (species in seq(0,10)) {
       field = sprintf('PartType%d',species)
-      if (!is.null(sni[[field]])) {
-        ntype = dim(sni[[field]]$Coordinates)[1]
-        if (ntype>0 & !is.null(sni$Header$NumPart_ThisFile)) {
-          if (species<length(sni$Header$NumPart_ThisFile)) {
-            if (ntype!=sni$Header$NumPart_ThisFile[species+1]) {
-              stop('Header$NumPart_ThisFile does not seem to match the particle data')
+      if (!is.null(snmaster[[field]])) {
+        imaster = snmaster[[field]]$ParticleIDs
+        ntype = length(imaster)
+        if (ntype>0) {
+
+          # check number of particles against header
+          if (!is.null(snmaster$Header$NumPart_ThisFile)) {
+            if (species<length(snmaster$Header$NumPart_ThisFile)) {
+              if (ntype!=snmaster$Header$NumPart_ThisFile[species+1]) {
+                stop('Header$NumPart_ThisFile does not seem to match the particle data')
+              }
+            } else {
+              stop('Header$NumPart_ThisFile has not enough elements')
             }
-          } else {
-            stop('Header$NumPart_ThisFile has not enough elements')
           }
+
+          # check particle IDs
+          if (any(imaster!=idmaster[n+seq(ntype)])) stop('unidentified particle ID error')
+
+          # copy interpolated positions and velocities
+          snmaster[[field]]$Coordinates = p$x[n+seq(ntype),]
+          snmaster[[field]]$Velocities = p$v[n+seq(ntype),]
+
+          # interpolate all other properties
+          if (!is.null(snslave[[field]])) {
+            islave = snslave[[field]]$ParticleIDs
+            if (length(islave)>0) {
+              g = ifelse(f<0.5,f,1-f)
+              if (length(islave)!=length(imaster) || !all(islave==imaster)) {
+                im = which(imaster%in%islave)
+                im = im[order(imaster[im])]
+                is = which(islave%in%imaster[im])
+                is = is[order(islave[is])]
+                # => islave[is] = imaster[im] is a monotonically increasing vector of all matched particleIDs
+                if (any(snmaster[[field]]$ParticleIDs[im]!=snslave[[field]]$ParticleIDs[is])) stop('indexing issue')
+              } else {
+                im = is = 1:length(imaster)
+              }
+              if (length(imaster)>0) {
+                fieldnames = names(snmaster[[field]])
+                fieldnames = fieldnames[!fieldnames%in%c('ParticleIDs','Coordinates','Velocities')]
+                for (fieldname in fieldnames) {
+                  if (!is.null(snslave[[field]][[fieldname]])) {
+                    if (fieldname=='InternalEnergy') {
+                      snmaster[[field]][[fieldname]][im] = exp((1-g)*log(snmaster[[field]][[fieldname]][im])+g*log(snslave[[field]][[fieldname]][is]))
+                    } else {
+                      if (dim(snmaster[[field]][[fieldname]])==2) {
+                        snmaster[[field]][[fieldname]][im,] = (1-g)*snmaster[[field]][[fieldname]][im,]+g*snslave[[field]][[fieldname]][is,]
+                      } else {
+                        snmaster[[field]][[fieldname]][im] = (1-g)*snmaster[[field]][[fieldname]][im]+g*snslave[[field]][[fieldname]][is]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+
+          n = n+ntype
+
         }
-        sni[[field]]$Coordinates = p$x[n+seq(ntype),]
-        sni[[field]]$Velocities = p$v[n+seq(ntype),]
-        n = n+ntype
       }
     }
     if (n!=dim(p$x)[1]) stop('unidentified interpolation indexing error')
 
   }
 
-  class(sni) = "snapshot"
-  return(sni)
+  class(snmaster) = "snapshot"
+  return(snmaster)
 
 }
