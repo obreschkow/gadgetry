@@ -2,16 +2,16 @@
 #'
 #' @importFrom pointr ptr
 #'
-#' @description Interpolate/extrapolate between adjacent Gadget snapshots, building on the interpolation routine \code{\link{particleinterp}}. The ordering of the particles follows that of the nearest snapshot, and if some particles change their species between the two snapshots, the interpolated snapshot uses the species of the nearest snapshot.
+#' @description Interpolates between adjacent Gadget snapshots. Coordinates and velocities are interpolated using the low-level routine \code{\link{particleinterp}}. All other particle properties are interpolated linearly, if and only if the particles exist in both snapshots and are of the same type in both snapshots. The ordering and the types of the particles in the interpolated snapshot follows that of the nearest snapshot.
 #'
-#' @param sn0 first gadget snapshot
-#' @param sn1 second gadget snapshot
-#' @param f interpolation time: 0 corresponds to time t0, 1 to time t1; should be within [0,1]
+#' @param sn0 first gadget snapshot; it must have at least one particle type, and each particle type must have at least the properties \code{ParticleIDs}, \code{Coordinates} and \code{Velocities} (if \code{usevelocities=TRUE})
+#' @param sn1 second gadget snapshot; should have same format as sn0 and must contain exactly the same particle IDs
+#' @param f fractional interpolation time: 0 corresponds to time t0, 1 to time t1; is automatically truncated to the interval [0,1]
 #' @param t0 time of first snapshot, if not given it is extracted from the header of sn0
 #' @param t1 time of second snapshot, if not given it is extracted from the header of sn1
 #' @param usevelocities logical flag. If TRUE, velocities are used to improve the interpolation of positions.
-#' @param v0factor factor to be applied to velocities of sn0 to convert to length/time units of the snapshot coordinates and the t0/t1/ti times.
-#' @param v1factor factor to be applied to velocities of sn1 to convert to length/time units of the snapshot coordinates and the t0/t1/ti times.
+#' @param v0factor factor to be applied to velocities of sn0 to convert to length units of the snapshot coordinates and the time units of t0 and t1.
+#' @param v1factor factor to be applied to velocities of sn1 to convert to length units of the snapshot coordinates and the time units of t0 and t1.
 #' @param afield optional acceleration field for leapfrog integration. This must be a function of a n-by-3 array representing n position vectors, which returns an n-by-3 array with the n acceleration vectors in the same length and time units as the snapshot coordinates and t0/t1/ti times.
 #' @param dt optional time step used for leapfrog integration; only used if \code{afield} given. The default is \code{dt=abs(t1-t0)/20}.
 #'
@@ -38,6 +38,7 @@ snapshotinterp = function(sn0, sn1, f=0.5, t0=NULL, t1=NULL,
     # determine which snapshot is considered the master that
     # defines the ordering of particles and their species
     master = ifelse(f<0.5,0,1)
+    snmaster = snslave = NULL # avoids warning in package check
     pointr::ptr('snmaster',sprintf('sn%d',master))
     pointr::ptr('snslave',sprintf('sn%d',1-master))
 
@@ -56,6 +57,7 @@ snapshotinterp = function(sn0, sn1, f=0.5, t0=NULL, t1=NULL,
         t1 = sn1$Header$Time
       }
     }
+    if (t0>t1) stop('Time t0 must not be larger than t1.')
 
     # interpolate time
     ti = t0*(1-f)+t1*f
@@ -126,12 +128,13 @@ snapshotinterp = function(sn0, sn1, f=0.5, t0=NULL, t1=NULL,
             if (length(islave)>0) {
               g = ifelse(f<0.5,f,1-f)
               if (length(islave)!=length(imaster) || !all(islave==imaster)) {
+                imaster = c(5,34,9,1,71,32,6)
+                islave = c(34,71,6,5,178,2,1)
                 im = which(imaster%in%islave)
                 im = im[order(imaster[im])]
-                is = which(islave%in%imaster[im])
+                is = which(islave%in%imaster)
                 is = is[order(islave[is])]
                 # => islave[is] = imaster[im] is a monotonically increasing vector of all matched particleIDs
-                if (any(snmaster[[field]]$ParticleIDs[im]!=snslave[[field]]$ParticleIDs[is])) stop('indexing issue')
               } else {
                 im = is = 1:length(imaster)
               }
@@ -140,14 +143,10 @@ snapshotinterp = function(sn0, sn1, f=0.5, t0=NULL, t1=NULL,
                 fieldnames = fieldnames[!fieldnames%in%c('ParticleIDs','Coordinates','Velocities')]
                 for (fieldname in fieldnames) {
                   if (!is.null(snslave[[field]][[fieldname]])) {
-                    if (fieldname=='InternalEnergy') {
-                      snmaster[[field]][[fieldname]][im] = exp((1-g)*log(snmaster[[field]][[fieldname]][im])+g*log(snslave[[field]][[fieldname]][is]))
+                    if (length(dim(snmaster[[field]][[fieldname]]))==2) {
+                      snmaster[[field]][[fieldname]][im,] = (1-g)*snmaster[[field]][[fieldname]][im,]+g*snslave[[field]][[fieldname]][is,]
                     } else {
-                      if (dim(snmaster[[field]][[fieldname]])==2) {
-                        snmaster[[field]][[fieldname]][im,] = (1-g)*snmaster[[field]][[fieldname]][im,]+g*snslave[[field]][[fieldname]][is,]
-                      } else {
-                        snmaster[[field]][[fieldname]][im] = (1-g)*snmaster[[field]][[fieldname]][im]+g*snslave[[field]][[fieldname]][is]
-                      }
+                      snmaster[[field]][[fieldname]][im] = (1-g)*snmaster[[field]][[fieldname]][im]+g*snslave[[field]][[fieldname]][is]
                     }
                   }
                 }

@@ -18,11 +18,11 @@ snapshotinterp(
 )
 }
 \arguments{
-\item{sn0}{first gadget snapshot}
+\item{sn0}{first gadget snapshot; it must have at least one particle type, and each particle type must have at least the properties \code{ParticleIDs}, \code{Coordinates} and \code{Velocities} (if \code{usevelocities=TRUE})}
 
-\item{sn1}{second gadget snapshot}
+\item{sn1}{second gadget snapshot; should have same format as sn0 and must contain exactly the same particle IDs}
 
-\item{f}{interpolation time: 0 corresponds to time t0, 1 to time t1; should be within [0,1]}
+\item{f}{fractional interpolation time: 0 corresponds to time t0, 1 to time t1; is automatically truncated to the interval [0,1]}
 
 \item{t0}{time of first snapshot, if not given it is extracted from the header of sn0}
 
@@ -30,9 +30,9 @@ snapshotinterp(
 
 \item{usevelocities}{logical flag. If TRUE, velocities are used to improve the interpolation of positions.}
 
-\item{v0factor}{factor to be applied to velocities of sn0 to convert to length/time units of the snapshot coordinates and the t0/t1/ti times.}
+\item{v0factor}{factor to be applied to velocities of sn0 to convert to length units of the snapshot coordinates and the time units of t0 and t1.}
 
-\item{v1factor}{factor to be applied to velocities of sn1 to convert to length/time units of the snapshot coordinates and the t0/t1/ti times.}
+\item{v1factor}{factor to be applied to velocities of sn1 to convert to length units of the snapshot coordinates and the time units of t0 and t1.}
 
 \item{afield}{optional acceleration field for leapfrog integration. This must be a function of a n-by-3 array representing n position vectors, which returns an n-by-3 array with the n acceleration vectors in the same length and time units as the snapshot coordinates and t0/t1/ti times.}
 
@@ -42,7 +42,7 @@ snapshotinterp(
 snapshot object with interpolated particle properties. The interpolation time \code{ti} is returned in 'Header$Time'.
 }
 \description{
-Interpolate/extrapolate between adjacent Gadget snapshots, building on the interpolation routine \code{\link{particleinterp}}. The ordering of the particles follows that of the nearest snapshot, and if some particles change their species between the two snapshots, the interpolated snapshot uses the species of the nearest snapshot.
+Interpolates between adjacent Gadget snapshots. Coordinates and velocities are interpolated using the low-level routine \code{\link{particleinterp}}. All other particle properties are interpolated linearly, if and only if the particles exist in both snapshots and are of the same type in both snapshots. The ordering and the types of the particles in the interpolated snapshot follows that of the nearest snapshot.
 }
 \author{
 Danail Obreschkow
