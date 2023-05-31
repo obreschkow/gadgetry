@@ -2,14 +2,14 @@
 % Please edit documentation in R/halomodel.R
 \name{halomodel}
 \alias{halomodel}
-\title{Standard spherical mass distributions in astrophysics}
+\title{Generate standard spherical mass distributions in astrophysics}
 \usage{
 halomodel(model = "hernquist", rmax = NULL, plots = FALSE, rplot = 10)
 }
 \arguments{
 \item{model}{name of model. Currently available models: "hernquist" (Hernquist 1990), "uniform" (spherical top-hat).}
 
-\item{rmax}{truncation radius for models that have an independent characteristic radius in addition to the truncation. If not given, a model-dependent default is assigned. All profiles are normalized, such that the trunction radius contains the full mass.}
+\item{rmax}{truncation radius for models that have an independent characteristic radius in addition to the truncation. If not given, a model-dependent default is assigned. All profiles are normalized, such that the truncation radius contains the full mass.}
 
 \item{plots}{logical flag indicating whether to produce a series of test plots}
 
@@ -19,7 +19,7 @@ halomodel(model = "hernquist", rmax = NULL, plots = FALSE, rplot = 10)
 list of functions for the selected model
 }
 \description{
-Generates functions associated with spherically symmetric halo models. Everything is in units dimensionless units where M=R=G=1, where M is the total halo mass, R is the characteristic radius and G is the gravitational constant.
+Generates potential-density pairs and auxillary functions associated with spherically symmetric mass distributions commonly used in astrophysics. All function arguments and values are in dimensionless units, such that M=R=G=1, where M is the total halo mass inside a truncation radius, R is the characteristic radius and G is the gravitational constant.
 }
 \examples{
 

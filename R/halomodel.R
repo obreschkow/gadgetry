@@ -1,12 +1,12 @@
-#' Standard spherical mass distributions in astrophysics
+#' Generate standard spherical mass distributions in astrophysics
 #'
 #' @importFrom graphics hist curve abline
 #' @importFrom stats runif integrate
 #'
-#' @description Generates functions associated with spherically symmetric halo models. Everything is in units dimensionless units where M=R=G=1, where M is the total halo mass, R is the characteristic radius and G is the gravitational constant.
+#' @description Generates potential-density pairs and auxillary functions associated with spherically symmetric mass distributions commonly used in astrophysics. All function arguments and values are in dimensionless units, such that M=R=G=1, where M is the total halo mass inside a truncation radius, R is the characteristic radius and G is the gravitational constant.
 #'
 #' @param model name of model. Currently available models: "hernquist" (Hernquist 1990), "uniform" (spherical top-hat).
-#' @param rmax truncation radius for models that have an independent characteristic radius in addition to the truncation. If not given, a model-dependent default is assigned. All profiles are normalized, such that the trunction radius contains the full mass.
+#' @param rmax truncation radius for models that have an independent characteristic radius in addition to the truncation. If not given, a model-dependent default is assigned. All profiles are normalized, such that the truncation radius contains the full mass.
 #' @param plots logical flag indicating whether to produce a series of test plots
 #' @param rplot maximum plotting radius; only used if plots=TRUE.
 #'
@@ -60,7 +60,7 @@ halomodel = function(model='hernquist', rmax=NULL, plots=FALSE, rplot=10) {
 
     # truncation radius
     if (!is.null(rmax)) {
-      stop('rmax must not be set. In a spherical top hat, the truncation radius is the characteristic radius, which default to unity.')
+      stop('rmax must not be set. In a spherical top hat, the truncation radius is the characteristic radius, which defaults to unity.')
     }
     f$rmax = 1
 
@@ -74,7 +74,7 @@ halomodel = function(model='hernquist', rmax=NULL, plots=FALSE, rplot=10) {
     f$mass = function(r) ifelse(r<=1,r^3,1)
 
     # Isotropic velocity dispersion from Jeans equation
-    f$sigma = function(r) ifelse(r<=1,sqrt((1-r^2)/2),0)
+    f$sigma = function(r) ifelse(r<=1,sqrt((1-pmin(r^2,1))/2),0) # pmin needed despite ifelse to avoid wired warnings around r=1 in plotting
 
     # Potential phi(r)=integral(M(<r)/r^2,0,r)+const
     f$potential = function(r) ifelse(r<=1,r^2/2-3/2,-1/r)
@@ -88,7 +88,21 @@ halomodel = function(model='hernquist', rmax=NULL, plots=FALSE, rplot=10) {
 
   }
 
-  # Derive a few more quantities using general equations for any spherical mass distr.:
+  # check if all required properties have been assigned
+  desired.names = c('model','notes','rmax','rho','pdf','mass','sigma','potential','quantile')
+  actual.names = names(f)
+  if (!all(desired.names%in%actual.names)) stop('not all desired properties exist')
+  if (!all(actual.names%in%desired.names)) stop('more than the desired properties exist')
+
+  # Derive a few more quantities using general equations for any spherical mass distribution
+  # and run several checks
+  eps = 1e-10
+
+  # check mass distribution
+  if (f$mass(0)!=0) stop('mass distribution error')
+
+  # check quantile function
+  if (f$quantile(0)!=0 | !(f$quantile(1)==f$rmax || abs(f$quantile(1)/f$rmax-1)<eps)) stop('quantile function error')
 
   # Random radius generator
   f$random = function(n) f$quantile(stats::runif(n))
@@ -99,9 +113,15 @@ halomodel = function(model='hernquist', rmax=NULL, plots=FALSE, rplot=10) {
   # Local escape velocity [equation true for any spherical mass distribution]
   f$vesc = function(r) sqrt(-2*f$potential(r))
 
-  # Total potential energy
-  y = function(r) f$potential(r)*f$pdf(r)/2
-  f$epot = stats::integrate(y,0,f$rmax)$value
+  # Total potential energy, while checking consistency of potential-density pair
+  f1 = function(r) -f$mass(r)*f$pdf(r)/r
+  f2 = function(r) -(f$mass(r)/r)^2/2
+  f3 = function(r) f$potential(r)*f$pdf(r)/2
+  u1 = stats::integrate(f1,0,f$rmax)$value
+  u2 = stats::integrate(f2,0,f$rmax)$value-1/2/f$rmax # the second term is the integral from rmax to infinity
+  u3 = stats::integrate(f3,0,f$rmax)$value
+  if (max(abs(c(u1,u2)/u3-1))>eps) stop('Error in potential energy check')
+  f$epot = u3
 
   # Total kinetic energy for pure isotropic dispersion
   y = function(r) 3*f$sigma(r)^2/2*f$pdf(r) # factor three because of three dimensions
@@ -115,15 +135,15 @@ halomodel = function(model='hernquist', rmax=NULL, plots=FALSE, rplot=10) {
     }
 
     fct = function(x) ifelse(x<=f$rmax,f$rho(x),NA)
-    mycurve(fct,0.1,rplot,ylab='f$rho',log='xy')
-    mycurve(f$mass,0,rplot,ylab='f$mass')
-    mycurve(f$potential,0,rplot,ylab='f$potential')
-    mycurve(f$vcirc,0,rplot,ylab='f$vcirc (f$sigma)')
+    mycurve(fct,0.1,rplot,ylab='3D-density f$rho',log='xy')
+    mycurve(f$mass,0,rplot,ylab='Enclosed mass f$mass')
+    mycurve(f$potential,0,rplot,ylab='Potential f$potential')
+    mycurve(f$vcirc,0,rplot,ylab='Circular velocity f$vcirc (1D-dispersion f$sigma)')
     mycurve(f$sigma,0,rplot,add=TRUE,lty=2)
     n = 1e6
     r = f$random(n)
     r = r[r<rplot]
-    graphics::hist(r,breaks=seq(0,rplot,length=101),xlim=c(0,rplot),main='Histogram of 1e6 random radii')
+    graphics::hist(r,breaks=seq(0,rplot,length=101),xlim=c(0,rplot),main=sprintf('Histogram of 1e6 random radii in a %s profile',f$model))
     fct2 = function(x) f$pdf(x)*n*rplot/100
     mycurve(fct2,add=TRUE,col='red',lwd=1.5)
 

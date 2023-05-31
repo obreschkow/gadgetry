@@ -38,7 +38,7 @@ snapshotinterp = function(sn0, sn1, f=0.5, t0=NULL, t1=NULL,
     # determine which snapshot is considered the master that
     # defines the ordering of particles and their species
     master = ifelse(f<0.5,0,1)
-    snmaster = snslave = NULL # avoids warning in package check
+    if (F) snmaster = snslave = NULL# avoids warning in package check
     pointr::ptr('snmaster',sprintf('sn%d',master))
     pointr::ptr('snslave',sprintf('sn%d',1-master))
 
