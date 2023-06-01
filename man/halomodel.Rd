@@ -4,26 +4,40 @@
 \alias{halomodel}
 \title{Generate standard spherical mass distributions in astrophysics}
 \usage{
-halomodel(model = "hernquist", rmax = NULL, plots = FALSE, rplot = 10)
+halomodel(
+  model = "hernquist",
+  rmax = NULL,
+  rscale = 1,
+  mtot = 1,
+  gravity = 1,
+  plots = FALSE,
+  rplot = 2
+)
 }
 \arguments{
-\item{model}{name of model. Currently available models: "hernquist" (Hernquist 1990), "uniform" (spherical top-hat).}
+\item{model}{name of model. Currently available models: "uniform" (spherical top-hat), "isothermal" (singular isothermal sphere with logarithmic potential), "hernquist" (Hernquist 1990), .}
 
-\item{rmax}{truncation radius for models that have an independent characteristic radius in addition to the truncation. If not given, a model-dependent default is assigned. All profiles are normalized, such that the truncation radius contains the full mass.}
+\item{rmax}{optional truncation radius. If not given, a natural model-dependent value is assigned, which is infinite for models where the mass converges in this case.}
+
+\item{rscale}{scale radius for models, which admit a characteristic scale in addition to a possible truncation radius. For all other models, this parameter is ignored. \code{rmax} and \code{rscale} should be provided in the same units.}
+
+\item{mtot}{total mass enclosed by the truncation radius}
+
+\item{gravity}{gravitational constant}
 
 \item{plots}{logical flag indicating whether to produce a series of test plots}
 
-\item{rplot}{maximum plotting radius; only used if plots=TRUE.}
+\item{rplot}{maximum plotting radius in the same units as \code{rmax} and \code{rscale}; only used if plots=TRUE.}
 }
 \value{
 list of functions for the selected model
 }
 \description{
-Generates potential-density pairs and auxillary functions associated with spherically symmetric mass distributions commonly used in astrophysics. All function arguments and values are in dimensionless units, such that M=R=G=1, where M is the total halo mass inside a truncation radius, R is the characteristic radius and G is the gravitational constant.
+Generates potential-density pairs and auxiliary functions associated with spherically symmetric mass distributions commonly used in astrophysics. The units of all outputs are the same as those of \code{rmax}, \code{rscale}, \code{mtot} and \code{gravity}.
 }
 \examples{
 
-f = halomodel(plots = TRUE, rplot = 5, rmax=3)
+halomodel('hernquist', plots = TRUE, rplot = 5, rmax=3)
 
 }
 \author{
