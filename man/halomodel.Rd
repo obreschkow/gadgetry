@@ -4,15 +4,7 @@
 \alias{halomodel}
 \title{Generate standard spherical mass distributions in astrophysics}
 \usage{
-halomodel(
-  model = "hernquist",
-  rmax = NULL,
-  rscale = 1,
-  mtot = 1,
-  gravity = 1,
-  plots = FALSE,
-  rplot = 2
-)
+halomodel(model = "hernquist", rmax = NULL, rscale = 1, mtot = 1, gravity = 1)
 }
 \arguments{
 \item{model}{name of model. Currently available models: "uniform" (spherical top-hat), "isothermal" (singular isothermal sphere with logarithmic potential), "hernquist" (Hernquist 1990), .}
@@ -24,10 +16,6 @@ halomodel(
 \item{mtot}{total mass enclosed by the truncation radius}
 
 \item{gravity}{gravitational constant}
-
-\item{plots}{logical flag indicating whether to produce a series of test plots}
-
-\item{rplot}{maximum plotting radius in the same units as \code{rmax} and \code{rscale}; only used if plots=TRUE.}
 }
 \value{
 list of functions for the selected model
@@ -37,7 +25,46 @@ Generates potential-density pairs and auxiliary functions associated with spheri
 }
 \examples{
 
-halomodel('hernquist', plots = TRUE, rplot = 5, rmax=3)
+# sample n points from Hernquist distribution
+n = 1e6
+h = halomodel('hernquist')
+set = h$rradvel(n)
+
+# plot radial density of sample
+xlim = c(0.01,100)
+bin = cooltools::bindata(set$r,bins=10^seq(-2,2,by=0.05),method='custom')
+bin$dV = 4*pi/3*(bin$xright^3-bin$xleft^3)
+bin$rho = bin$count/bin$dV/n
+graphics::plot(bin$xmedian,bin$rho,type='p',pch=16,cex=0.7,col='blue',
+               xlim=xlim,ylim=c(1e-9,2e1),xaxs='i',yaxs='i',log='xy',xlab='Radius',ylab='Density')
+
+# compare radial density profile to analytic profile
+graphics::curve(h$rho(x),xlim[1],xlim[2],add=TRUE)
+graphics::abline(v=1,lty=3)
+
+# plot velocity distribution in a small radius interval
+rlim = c(0.95,1.05) # interval centered around the scale radius r=1
+xlim = c(0,h$vesc(rlim[1]))
+sel = set$r>=rlim[1] & set$r<=rlim[2]
+graphics::hist(set$v[sel],breaks=seq(0,h$vesc(rlim[1]),length=50),col='lightblue',border=NA,
+               xaxs='i',yaxs='i',freq=FALSE,ylim=c(0,2.2),main=NA,
+               xlab='Velocity norm',ylab='Probablity density')
+
+# compare against non-Maxwellian analytical solution
+fvel = function(v) {
+  g = function(v) h$dradvel(mean(rlim),v)
+  gnorm = integrate(g,0,h$vesc(rlim[1]))$value
+  return(g(v)/gnorm)
+}
+graphics::curve(fvel(x),0,1.5,1e3,add=TRUE)
+x = cooltools::midseq(0,sqrt(2),1e4)
+graphics::abline(v=sum(x*fvel(x))/sum(fvel(x))) # mean
+
+# compare against Jeans approximation
+sigma = h$sigma(mean(rlim))
+dmaxwell = function(x) sqrt(2/pi)*x^2/sigma^3*exp(-x^2/2/sigma^2)
+graphics::curve(dmaxwell(x),add=TRUE,lty=2)
+graphics::abline(v=sigma*sqrt(8/pi),lty=2) # mean of Maxwell distribution
 
 }
 \author{

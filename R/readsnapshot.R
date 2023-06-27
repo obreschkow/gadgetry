@@ -213,6 +213,19 @@ readsnapshot = function(file, type='auto') {
       stop('Failed to find particles groups "PartType#" or "ParticleType#" in the HDF file.')
     }
 
+    vectormatrix = function(x) {
+      if (length(dim(x))==2 & dim(x)[1]==3) {
+        x = t(x)
+      } else {
+        if (length(x)%%3==0) {
+          x = t(array(x,c(3,length(x)/3)))
+        } else {
+          stop('unknown hdf structure')
+        }
+      }
+      return(x)
+    }
+
     dat = list()
     if (length(groups)<1) stop('something wrong with HDF5 file')
     if ('Config'%in%groups) dat$Config = rhdf5::h5readAttributes(file,'/Config')
@@ -223,9 +236,9 @@ readsnapshot = function(file, type='auto') {
       field = sprintf('PartType%d',i)
       if (field%in%groups) {
         raw = rhdf5::h5read(file,field.file)
-        if (!is.null(raw$Coordinates)) raw$Coordinates = t(raw$Coordinates)
-        if (!is.null(raw$Velocities)) raw$Velocities = t(raw$Velocities)
-        if (!is.null(raw$Accelerations)) raw$Accelerations = t(raw$Accelerations)
+        if (!is.null(raw$Coordinates)) raw$Coordinates = vectormatrix(raw$Coordinates)
+        if (!is.null(raw$Velocities)) raw$Velocities = vectormatrix(raw$Velocities)
+        if (!is.null(raw$Accelerations)) raw$Accelerations = vectormatrix(raw$Accelerations)
         dat[[field]] = raw
       }
     }
