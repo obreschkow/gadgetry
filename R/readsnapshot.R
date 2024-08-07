@@ -98,11 +98,14 @@ readsnapshot = function(file, type='auto') {
     # initialize
     block.start = function(target.block.size=NA) {
       block.size = readBin(data, 'integer', size=4)
-      if (target.block.size>2^23-1) target.block.size=NA
+      if (length(block.size)==0) {
+        close(data)
+        stop('End of file reached.')
+      }
+      #if (!is.na(target.block.size) && target.block.size>2^31-1) target.block.size=NA
       if (!is.na(target.block.size)) {
         if (target.block.size!=block.size) {
-          close(data)
-          stop(sprintf('Expected block size (%d) differs from actual block size (%d).',target.block.size,block.size))
+          cat(sprintf('WARNING: Expected block size (%.0f) differs from block size number in file (%.0f).\n',target.block.size,block.size))
         }
       }
       return(block.size)
@@ -110,8 +113,7 @@ readsnapshot = function(file, type='auto') {
     block.end = function(block.size) {
       check = readBin(data, 'integer', size=4)
       if (check!=block.size) {
-        close(data)
-        stop('Block termination error.')
+        cat('WARNING: Block termination error.\n')
       }
     }
 
@@ -167,7 +169,6 @@ readsnapshot = function(file, type='auto') {
     block.end(block.size)
 
     # read IDs
-    n = sum(dat$Header$NumPart_ThisFile)
     block.size = block.start(4*n)
     for (i in seq(0,5)) {
       k = dat$Header$NumPart_ThisFile[i+1]

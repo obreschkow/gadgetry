@@ -285,9 +285,9 @@ halomodel = function(model='hernquist', rmax=NULL, rscale=1, mtot=1, gravity=1) 
   # Complete set of units
   unit$velocity = sqrt(unit$gravity*unit$mass/unit$length)
   unit$acceleration = unit$gravity*unit$mass/unit$length^2
-  unit$potential = unit$gravity*unit$mass/unit$length
+  unit$potential = unit$velocity^2
   unit$density = unit$mass/unit$length^3
-  unit$energy = unit$gravity*unit$mass^2/unit$length
+  unit$specificenergy = unit$gravity*unit$mass/unit$length # spec energy = energy per unit mass
 
   # Scale and finalize all quantities
   h = list(model = f$model,
@@ -310,7 +310,7 @@ halomodel = function(model='hernquist', rmax=NULL, rscale=1, mtot=1, gravity=1) 
            rmax = f$rmax*unit$length)
   if (!is.null(f$rscale)) h$rscale = f$rscale*unit$length
   if (!is.null(f$f6D)) {
-    h$f6D = function(x) f$f6D(x/unit$energy)/unit$length^3/unit$velocity^3
+    h$f6D = function(x) f$f6D(x/unit$specificenergy)*unit$mass/unit$length^3/unit$velocity^3
     h$dradvel = function(r,v) f$dradvel(r/unit$length,v/unit$velocity)/unit$length
     h$rradvel = function(n) {
       out = f$rradvel(n)

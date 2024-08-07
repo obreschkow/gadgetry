@@ -2,6 +2,7 @@
 % Please edit documentation in R/gadgetry-package.R
 \docType{package}
 \name{gadgetry}
+\alias{gadgetry-package}
 \alias{gadgetry}
 \title{Reading, Processing and Visualizing Astrophysical N-Body Simulation Data}
 \description{
