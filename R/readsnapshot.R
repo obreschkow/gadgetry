@@ -1,11 +1,13 @@
 #' Read Gadget simulation data
 #'
 #' @importFrom rhdf5 h5ls h5read h5readAttributes
+#' @importFrom bit64 integer64
 #'
 #' @description Reads astrophysical N-body data output by the Gadget code (versions 1/2/3/4, see \url{https://wwwmpa.mpa-garching.mpg.de/gadget4/}). Binary and HDF5 formats can be read.
 #'
 #' @param file filename of snapshot to load. If the snapshot is split into several subvolumes, an asterix symbol (*) can be used in the filename at the place of the subvolume index. In this case, all the subvolumes are loaded and concatenated into a single snapshot with adjusted header information.
 #' @param type character specifying the data format. Must be either of: \code{bin} for binary format, \code{hdf} for HDF5 format or \code{auto} to automatically determine the format from file extension.
+#' @param bit64 logical flag specifying if 64-bit integer should be used, for example to handle large IDs. Only used with HDF5 files.
 #'
 #' @return Returns an object of class \code{snapshot}, which is a structured list that closely resembles the HDF5 format of Gadget (see \url{https://wwwmpa.mpa-garching.mpg.de/gadget4/}). HDF5 names are used in the Header, even when reading binary files (for name conversions, see Table 4 of \url{https://wwwmpa.mpa-garching.mpg.de/gadget/users-guide.pdf}).
 #'
@@ -15,7 +17,7 @@
 #'
 #' @export
 
-readsnapshot = function(file, type='auto') {
+readsnapshot = function(file, type='auto', bit64=FALSE) {
 
   fn = gsub('\\*','0',file)
 
@@ -52,7 +54,7 @@ readsnapshot = function(file, type='auto') {
     nfiles = 0
     while (file.exists(fn)) {
       nfiles = nfiles+1
-      subvol[[nfiles]] = .readsnapshot.single(fn, type)
+      subvol[[nfiles]] = .readsnapshot.single(fn, type, bit64)
       fn = gsub('\\*',sprintf('%d',nfiles),file)
     }
 
@@ -80,7 +82,7 @@ readsnapshot = function(file, type='auto') {
   } else {
 
     # read single file
-    dat = .readsnapshot.single(fn, type)
+    dat = .readsnapshot.single(fn, type, bit64)
 
   }
 
@@ -90,7 +92,7 @@ readsnapshot = function(file, type='auto') {
 
 }
 
-.readsnapshot.single = function(file, type) {
+.readsnapshot.single = function(file, type, bit64) {
 
   # load file
   if (type=='bin') {
@@ -236,7 +238,11 @@ readsnapshot = function(file, type='auto') {
       field.file = sprintf('%s%d',base,i)
       field = sprintf('PartType%d',i)
       if (field%in%groups) {
-        raw = rhdf5::h5read(file,field.file)
+        if (bit64) {
+          raw = rhdf5::h5read(file,field.file,bit64conversion='bit64')
+        } else {
+          raw = rhdf5::h5read(file,field.file)
+        }
         if (!is.null(raw$Coordinates)) raw$Coordinates = vectormatrix(raw$Coordinates)
         if (!is.null(raw$Velocities)) raw$Velocities = vectormatrix(raw$Velocities)
         if (!is.null(raw$Accelerations)) raw$Accelerations = vectormatrix(raw$Accelerations)

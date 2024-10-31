@@ -4,12 +4,14 @@
 \alias{readsnapshot}
 \title{Read Gadget simulation data}
 \usage{
-readsnapshot(file, type = "auto")
+readsnapshot(file, type = "auto", bit64 = FALSE)
 }
 \arguments{
 \item{file}{filename of snapshot to load. If the snapshot is split into several subvolumes, an asterix symbol (*) can be used in the filename at the place of the subvolume index. In this case, all the subvolumes are loaded and concatenated into a single snapshot with adjusted header information.}
 
 \item{type}{character specifying the data format. Must be either of: \code{bin} for binary format, \code{hdf} for HDF5 format or \code{auto} to automatically determine the format from file extension.}
+
+\item{bit64}{logical flag specifying if 64-bit integer should be used, for example to handle large IDs. Only used with HDF5 files.}
 }
 \value{
 Returns an object of class \code{snapshot}, which is a structured list that closely resembles the HDF5 format of Gadget (see \url{https://wwwmpa.mpa-garching.mpg.de/gadget4/}). HDF5 names are used in the Header, even when reading binary files (for name conversions, see Table 4 of \url{https://wwwmpa.mpa-garching.mpg.de/gadget/users-guide.pdf}).
