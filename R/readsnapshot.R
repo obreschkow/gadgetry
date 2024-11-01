@@ -1,6 +1,5 @@
 #' Read Gadget simulation data
 #'
-#' @importFrom rhdf5 h5ls h5read h5readAttributes
 #' @importFrom bit64 integer64
 #'
 #' @description Reads astrophysical N-body data output by the Gadget code (versions 1/2/3/4, see \url{https://wwwmpa.mpa-garching.mpg.de/gadget4/}). Binary and HDF5 formats can be read.
@@ -206,6 +205,10 @@ readsnapshot = function(file, type='auto', bit64=FALSE) {
     close(data)
 
   } else if (type=='hdf') {
+
+    if (!requireNamespace("rhdf5", quietly=TRUE)) {
+      stop('Package rhdf5 is needed to load HDF5 data.')
+    }
 
     groups = rhdf5::h5ls(file,recursive=FALSE)$name
     if ('ParticleType'%in%substring(groups,1,12)) {
