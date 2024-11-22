@@ -8,6 +8,8 @@
 #' @description Produces a raster image visualizing particle positions in 3D N-body/SPH data.
 #'
 #' @param x object of class 'snapshot'. It must contain at least one sublist PartType# (with #=0,1,...). Each sublist PartType# represents one type of particle (e.g. gas, stars, dark matter) and must contain at least the particles coordinates in an N-by-3 matrix \code{Coordinates}. Other optional elements of PartType# are:\cr
+#' \code{Masses} = N-vector with particle masses, used as luminosity weights
+#' \code{Density} or \code{Densities} = N-vector with local densities. These are only used to determine the smoothing if kde=4 and if Masses are provided.
 #' \code{col} = color used to display this particle type. This can be a single color or a vector of colors. If a single color is provided, a range of brightness of that color is produced automatically .\cr
 #' \code{value} = optional N-vector of values, one for each particle, which define the position on the color scale. If not given, particles are colored according to their projected density.\cr
 #' \code{valrange} = optional 2-vector specifying the values corresponding to the limits of the color scale. Only used if the N-vector \code{value} is given.\cr
@@ -32,8 +34,8 @@
 #' @param kde default value used in \code{dat$PartType#} (see above).
 #' @param smoothing default value used in \code{dat$PartType#} (see above).
 #' @param shadows overall contrast value.
-#' @param sample.fraction fraction of particles to be used. Ff 1, all particles are used, if <1 a random subsample is drawn.
-#' @param screen logical flag specifying whether the images is displayed on the screen.
+#' @param sample.fraction fraction of particles to be used. If 1, all particles are used, if <1 a random subsample is drawn.
+#' @param screen logical flag specifying whether the image is displayed on the screen.
 #' @param pngfile optional png-filename to save the image as raster image.
 #' @param pdffile optional pdf-filename to save the image as pdf-file.
 #' @param title Text to be added to the figure.
@@ -109,7 +111,7 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
 
   # handle fov
   if (!is.null(fov)) {
-    if (fov>120) stop('fov cannot be larter than 120 degrees.')
+    if (fov>120) stop('fov cannot be larger than 120 degrees.')
     if (fov<=0) stop('fov must be larger than 0.')
   }
 
@@ -128,6 +130,9 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
     # specify smoothing kernel
     if (is.null(snapshot[[field]]$smoothing)) snapshot[[field]]$smoothing = smoothing
     if (is.null(snapshot[[field]]$kde)) snapshot[[field]]$kde = kde
+
+    # convert "Densities" (used in SWIFT) to "Density" (used in Gadget)
+    names(snapshot[[field]])[names(snapshot[[field]])=="Densities"]="Density"
 
     # handle values
     snapshot[[field]]$color.by.property = !is.null(snapshot[[field]]$value)
@@ -172,7 +177,7 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
   }
   # end input handling #########################################################
 
-  x = allpart(snapshot,'Coordinates',species = all.types)
+  if (is.null(center) | is.null(width) | isTRUE(1%in%(4:6))) x = allpart(snapshot,'Coordinates',species = all.types)
 
   # determine geometric center
   if (is.null(center)) {
@@ -238,7 +243,8 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
     stop('rotation must be an integer 1,...,6, a real 3-vector, or a 3-by-3 matrix.')
   }
 
-  x = NULL # to free up memory
+  rm(x) # to free up memory
+  gc()
 
   # prepare grid
   nx = round(npixels*width/mean.length)
@@ -314,6 +320,15 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
       if (!is.null(snapshot[[field]]$Masses)) snapshot[[field]]$Masses=snapshot[[field]]$Masses[sel]
     }
 
+    # weights
+    if (!is.null(snapshot[[field]]$Masses)) {
+      if (is.null(weight)) {
+        weight = snapshot[[field]]$Masses
+      } else {
+        weight = weight*snapshot[[field]]$Masses
+      }
+    }
+
     #  raster particle field
     sigma = NULL
     if (snapshot[[field]]$kde==4) {
@@ -335,7 +350,7 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
       } else {
         w = as.vector(snapshot[[field]]$value)*weight
       }
-      out[[field]]$value = cooltools::kde2(rbind(x[,1:2]), w=w, xlim=xlim, ylim=ylim, n=nx, smoothing=snapshot[[field]]$smoothing, algorithm=snapshot[[field]]$kde)$field/out[[field]]$density
+      out[[field]]$value = cooltools::kde2(rbind(x[,1:2]), w=w, sigma=sigma, xlim=xlim, ylim=ylim, n=nx, smoothing=snapshot[[field]]$smoothing, algorithm=snapshot[[field]]$kde)$field/out[[field]]$density
       out[[field]]$value[!is.finite(out[[field]]$value)] = 0
       out[[field]]$value[out[[field]]$value<0] = 0
     }

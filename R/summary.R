@@ -37,7 +37,7 @@ summary.snapshot = function(object, ...) {
         subfield = names(object[[field]])[j]
         x = object[[field]][[subfield]]
         if (all(x==round(x))) {
-          cat(sprintf('  Range of %s = [%d,%d]\n',subfield,min(x),max(x)))
+          cat(sprintf('  Range of %s = [%.0f,%.0f]\n',subfield,min(x),max(x)))
         } else {
           cat(sprintf('  Range of %s = [%.5e,%.5e]\n',subfield,min(x),max(x)))
         }

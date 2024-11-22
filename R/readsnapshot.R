@@ -16,7 +16,7 @@
 #'
 #' @export
 
-readsnapshot = function(file, type='auto', bit64=FALSE) {
+readsnapshot = function(file, type='auto', bit64=TRUE) {
 
   fn = gsub('\\*','0',file)
 

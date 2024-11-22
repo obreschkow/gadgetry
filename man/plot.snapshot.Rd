@@ -46,6 +46,8 @@
 }
 \arguments{
 \item{x}{object of class 'snapshot'. It must contain at least one sublist PartType# (with #=0,1,...). Each sublist PartType# represents one type of particle (e.g. gas, stars, dark matter) and must contain at least the particles coordinates in an N-by-3 matrix \code{Coordinates}. Other optional elements of PartType# are:\cr
+\code{Masses} = N-vector with particle masses, used as luminosity weights
+\code{Density} or \code{Densities} = N-vector with local densities. These are only used to determine the smoothing if kde=4 and if Masses are provided.
 \code{col} = color used to display this particle type. This can be a single color or a vector of colors. If a single color is provided, a range of brightness of that color is produced automatically .\cr
 \code{value} = optional N-vector of values, one for each particle, which define the position on the color scale. If not given, particles are colored according to their projected density.\cr
 \code{valrange} = optional 2-vector specifying the values corresponding to the limits of the color scale. Only used if the N-vector \code{value} is given.\cr
@@ -78,7 +80,7 @@
 
 \item{types}{vector specifying the particle types to be displayed. These numbers must correspond to the # in the sublists PartType#. If not given, all particle species are shown.}
 
-\item{sample.fraction}{fraction of particles to be used. Ff 1, all particles are used, if <1 a random subsample is drawn.}
+\item{sample.fraction}{fraction of particles to be used. If 1, all particles are used, if <1 a random subsample is drawn.}
 
 \item{lum}{default value used in \code{dat$PartType#} (see above).}
 
@@ -88,7 +90,7 @@
 
 \item{hdcolors}{logical flag. If TRUE, input color scales are slightly smoothed to avoid spurious slight color jumps steps due to 8-bit color representation.}
 
-\item{screen}{logical flag specifying whether the images is displayed on the screen.}
+\item{screen}{logical flag specifying whether the image is displayed on the screen.}
 
 \item{pngfile}{optional png-filename to save the image as raster image.}
 

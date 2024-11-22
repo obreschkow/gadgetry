@@ -4,7 +4,7 @@
 \alias{readsnapshot}
 \title{Read Gadget simulation data}
 \usage{
-readsnapshot(file, type = "auto", bit64 = FALSE)
+readsnapshot(file, type = "auto", bit64 = TRUE)
 }
 \arguments{
 \item{file}{filename of snapshot to load. If the snapshot is split into several subvolumes, an asterix symbol (*) can be used in the filename at the place of the subvolume index. In this case, all the subvolumes are loaded and concatenated into a single snapshot with adjusted header information.}
