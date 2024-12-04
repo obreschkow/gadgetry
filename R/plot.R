@@ -22,8 +22,9 @@
 #' @param types vector specifying the particle types to be displayed. These numbers must correspond to the # in the sublists PartType#. If not given, all particle species are shown.
 #' @param center optional 3-vector specifying the coordinate at the center of the plot. The default is the geometric center (= center of mass, if all particle masses are equal).
 #' @param rotation either an integer (1-6), a 3-vector or a 3-by-3 matrix, specifying a rotation of the 3D particle positions. In case of an integer: 1=(x,y)-plane, 2=(y,z)-plane, 3=(x,z)-plane, 4=(qmax,qmin)-plane, 5=(qmax,qmid)-plane, 6=(qmid,qmin)-plane, where qmax/qmid/qmin are the eigenvectors of the particle-quadrupole, associated with the maximum/middle/minimum eigenvalues, respectively. If \code{rotation} is a vector, its direction specifies the rotation axis and its norm the rotation angle in radians in the positive geometric sense.
+#' @param rot.center optional 3-vector specifying the center of rotation. If not given, this is assumed to be equal to the centre of the plot.
 #' @param width optional horizontal range of the image in simulation units. The default corresponds to the full range of particle positions. If a field-of-view is specified by the parameter \code{fov}, the width of the view is superseded by the latter and the value of \code{width} is used to normalised the smoothing lengths.
-#' @param fov optional field-of-view in degrees. If non-specified an orthogonal projection is applied. If specified, a stereographic projection is applied, such that the width of the image shows exactly the number of degrees specified by \code{fov}.
+#' @param fov optional field-of-view in degrees. If \code{NULL}, an orthogonal projection is applied. If specified, a stereographic projection is applied, such that the width of the image shows exactly the number of degrees specified by \code{fov}.
 #' @param depth optional depth of the slice/field to be shown. In the case of an orthogonal projection (fov=NULL) all particles that lie within -depth/2 to +depth/2 are shown. In the case of a stereographic projection, all particles within a distance \code{depth} from the observer (placed at \code{center}) are shown.
 #' @param taper logical flag, which is only used if a finite \code{depth} is specified. If \code{taper} is TRUE, the particles are faded out towards the edges of the depth range, using a cubic spline kernel (Monaghan 1992), whose characteristic width corresponds to \code{depth}.
 #' @param aspect aspect ratio (= width/height).
@@ -81,7 +82,7 @@
 #'
 #' @method plot snapshot
 #' @export
-plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth=NULL, taper=FALSE,
+plot.snapshot = function(x, center=NULL, rotation=1, rot.center=NULL, width=NULL, fov=NULL, depth=NULL, taper=FALSE,
                          aspect=1, npixels=300, kde=3, smoothing=1,
                          types=NULL, sample.fraction=1,
                          lum=1, gamma=1, shadows=1, hdcolors=TRUE,
@@ -277,7 +278,11 @@ plot.snapshot = function(x, center=NULL, rotation=1, width=NULL, fov=NULL, depth
     out[[field]]$n.tot = dim(x)[1]
 
     # translate particles to custom center and rotate
-    x = t(rot%*%(t(x)-center)) # probably the fastest way to do this
+    if (is.null(rot.center)) {
+      x = t(rot%*%(t(x)-center)) # probably the fastest way to do this
+    } else {
+      x = t(rot%*%(t(x)-rot.center)+rot.center-center)
+    }
 
     # stereographic projection
     if (!is.null(fov)) {
