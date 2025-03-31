@@ -140,20 +140,26 @@ Returns a structured list of parameters and arrays useful to analyse and reprodu
 Produces a raster image visualizing particle positions in 3D N-body/SPH data.
 }
 \examples{
-# plot test snapshot
+# load snapshot
 filename = system.file('test_snapshot.hdf5', package='gadgetry')
 sn = readsnapshot(filename)
-plot(sn)
 
-# prettify the plot
-sn$PartType1$smoothing = 7
-sn$PartType2$smoothing = 2.5
+# rendering parameters of dark matter
+sn$PartType1$col = '#0511ff'
+sn$PartType1$smoothing = 2
+
+# rendering parameters of stars
+sn$PartType2$col = '#ffff44'
+sn$PartType2$smoothing = 0.5
 sn$PartType2$lum = 0.3
-sn$PartType2$gamma = 0.8
-sn$PartType2$col = '#ff4444'
-out = plot(sn, length.unit='kpc', width=600,shadows=1.2)
-col = cooltools::lightness(allpart(out, 'col'), 0.7)
-legend(-300,300,c('Dark matter','Stars'),
+sn$PartType2$gamma = 0.6
+
+# plot snapshot
+out = plot(sn, length.unit='kpc', width=500, kde=3, rotation=c(0,0,0.5), arrows=FALSE)
+
+# add legend
+col = cooltools::lightness(allpart(out, 'col'), 0.65)
+legend(out$header$xlim[1],out$header$ylim[2],c('Dark matter','Stars'),
        col=col,pch=16,text.col=col,bty='n')
 
 }
