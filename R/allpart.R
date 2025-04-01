@@ -38,15 +38,23 @@ allpart = function(snapshot, field = 'Coordinates', species = seq(0,5)) {
   }
 
   # write data into output array
-  x = c()
+  x = NULL
   for (i in species) {
     group = sprintf('PartType%d',i)
     if (!is.null(snapshot[[group]])) {
       if (!is.null(snapshot[[group]][[field]])) {
         if (d==2) {
-          x = rbind(x,snapshot[[group]][[field]])
+          if (is.null(x)) {
+            x = snapshot[[group]][[field]]
+          } else {
+            x = rbind(x,snapshot[[group]][[field]])
+          }
         } else {
-          x = c(x,snapshot[[group]][[field]])
+          if (is.null(x)) {
+            x = snapshot[[group]][[field]]
+          } else {
+            x = c(x,snapshot[[group]][[field]])
+          }
         }
       } else {
         stop(sprintf('Field %s does not exist for species %d.\n',field,i))
