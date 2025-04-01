@@ -253,6 +253,20 @@ readsnapshot = function(file, type='auto', bit64=TRUE) {
       }
     }
 
+    convert_1d_arrays_to_vectors = function(x) {
+      if (is.list(x)) {
+        # If it's a list, recursively apply to each element
+        lapply(x, convert_1d_arrays_to_vectors)
+      } else if (is.array(x) && length(dim(x)) == 1) {
+        # If it's a 1D array, convert to vector
+        as.vector(x)
+      } else {
+        # Otherwise, return as is
+        x
+      }
+    }
+    dat = convert_1d_arrays_to_vectors(dat)
+
   } else {
 
     stop('Unknown "type".')

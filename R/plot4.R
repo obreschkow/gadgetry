@@ -68,6 +68,8 @@ plot4 = function(snapshot, rotations=c(2,4,1,3), screen = TRUE, pdffile = NULL, 
                       scale=FALSE, width=width, ...)$xlim
           if (is.null(width)) {width=diff(xlim)}
         } else {
+          print(i)
+          print(rotations[[i]])
           plot.snapshot(snapshot, rotation = rotations[[i]], pngfile = NULL, pdffile = NULL, screen = TRUE,
                       scale=ifelse(i==2,scale,FALSE), width=width, ...)
         }

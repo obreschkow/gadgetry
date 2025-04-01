@@ -184,18 +184,38 @@ plot.snapshot = function(x, center=NULL, rotation=1, rot.center=NULL, width=NULL
   }
   # end input handling #########################################################
 
-  if (is.null(center) | is.null(width) | isTRUE(1%in%(4:6))) x = allpart(snapshot,'Coordinates',species = all.types)
+  if (is.null(center) | is.null(width)) {
+
+    # extract all particles positions
+    x = allpart(snapshot,'Coordinates',species = all.types)
+
+    # determine if the data is a cubic box
+    L = apply(apply(x,2,range),2,diff)
+    dx = apply(apply(x,2,range),1,diff)
+    Lmax = max(L)
+    is.box = all(L/Lmax>1-1e-3) & all(abs(dx/Lmax)<1e-3)
+  }
 
   # determine geometric center
   if (is.null(center)) {
-    center = colSums(x)/dim(x)[1] # geometric centre
+    if (is.box) {
+      center = rep((max(x)+min(x))/2,3)
+    } else {
+      center = colSums(x)/dim(x)[1] # geometric centre
+    }
   } else {
     if (length(center)==1) center=rep(center,3)
     if (length(center)==2) center=c(center,0)
   }
 
   # determine plotting limits
-  if (is.null(width)) width = 2*sqrt(2)*max(cooltools::vectornorm(t(t(x)-center)))/sqrt(1+1/aspect^2)
+  if (is.null(width)) {
+    if (is.box) {
+      width = Lmax
+    } else {
+      width = 2*sqrt(2)*max(cooltools::vectornorm(t(t(x)-center)))/sqrt(1+1/aspect^2)
+    }
+  }
   height = width/aspect
   xlim = c(-1,1)*width/2
   ylim = c(-1,1)*height/2
@@ -216,7 +236,10 @@ plot.snapshot = function(x, center=NULL, rotation=1, rot.center=NULL, width=NULL
     if (is.null(xlab)) xlab = expression(e[1])
     if (is.null(ylab)) ylab = expression(e[2])
   } else if (length(rotation)==1) {
-    if (rotation>3) e = eigen(cooltools::quadrupole(t(t(x)-center)))$vectors
+    if (rotation>3) {
+      if (is.null(x)) x = allpart(snapshot)
+      e = eigen(cooltools::quadrupole(t(t(x)-center)))$vectors
+    }
     if (rotation==1) {
       rot = diag(3)
       if (is.null(xlab)) xlab = 'x'
