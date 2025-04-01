@@ -1,12 +1,13 @@
 #' Read Gadget simulation data
 #'
-#' @importFrom bit64 integer64
+#' @importFrom cooltools readhdf5
 #'
 #' @description Reads astrophysical N-body data output by the Gadget code (versions 1/2/3/4, see \url{https://wwwmpa.mpa-garching.mpg.de/gadget4/}). Binary and HDF5 formats can be read.
 #'
-#' @param file filename of snapshot to load. If the snapshot is split into several subvolumes, an asterix symbol (*) can be used in the filename at the place of the subvolume index. In this case, all the subvolumes are loaded and concatenated into a single snapshot with adjusted header information.
-#' @param type character specifying the data format. Must be either of: \code{bin} for binary format, \code{hdf} for HDF5 format or \code{auto} to automatically determine the format from file extension.
-#' @param bit64 logical flag specifying if 64-bit integer should be used, for example to handle large IDs. Only used with HDF5 files.
+#' @param file Filename of snapshot to load. If the snapshot is split into several subvolumes, an asterix symbol (*) can be used in the filename at the place of the subvolume index. In this case, all the subvolumes are loaded and concatenated into a single snapshot with adjusted header information.
+#' @param type Character specifying the data format. Must be either of: \code{bin} for binary format, \code{hdf} for HDF5 format or \code{auto} to automatically determine the format from file extension.
+#' @param subtree A structure specifying the HDF5 groups and datasets to be read. Use an asterisk \code{"*"} (default) to read the entire file. To read only part of the file, provide a named list reflecting the hierarchy of groups, subgroups, and datasets. For (sub)groups, use nested lists containing the items to read, or use \code{'*'} to load everything in the group. An empty list \code{list()} reads only the attributes of a group. For datasets, use \code{NULL} to read only attributes, or any other content to read the full data.
+#' @param empty Logical flag. If \code{TRUE}, only names of groups and datasets are returned, with all data equal to NA. This is a fast way of reading the hierarchical structure.
 #'
 #' @return Returns an object of class \code{snapshot}, which is a structured list that closely resembles the HDF5 format of Gadget (see \url{https://wwwmpa.mpa-garching.mpg.de/gadget4/}). HDF5 names are used in the Header, even when reading binary files (for name conversions, see Table 4 of \url{https://wwwmpa.mpa-garching.mpg.de/gadget/users-guide.pdf}).
 #'
@@ -16,7 +17,7 @@
 #'
 #' @export
 
-readsnapshot = function(file, type='auto', bit64=TRUE) {
+readsnapshot = function(file, type='auto', subtree='*', empty=FALSE) {
 
   fn = gsub('\\*','0',file)
 
@@ -53,7 +54,7 @@ readsnapshot = function(file, type='auto', bit64=TRUE) {
     nfiles = 0
     while (file.exists(fn)) {
       nfiles = nfiles+1
-      subvol[[nfiles]] = .readsnapshot.single(fn, type, bit64)
+      subvol[[nfiles]] = .readsnapshot.single(fn, type, subtree, empty)
       fn = gsub('\\*',sprintf('%d',nfiles),file)
     }
 
@@ -81,7 +82,7 @@ readsnapshot = function(file, type='auto', bit64=TRUE) {
   } else {
 
     # read single file
-    dat = .readsnapshot.single(fn, type, bit64)
+    dat = .readsnapshot.single(fn, type, subtree, empty)
 
   }
 
@@ -91,7 +92,7 @@ readsnapshot = function(file, type='auto', bit64=TRUE) {
 
 }
 
-.readsnapshot.single = function(file, type, bit64) {
+.readsnapshot.single = function(file, type, subtree, empty) {
 
   # load file
   if (type=='bin') {
@@ -206,66 +207,72 @@ readsnapshot = function(file, type='auto', bit64=TRUE) {
 
   } else if (type=='hdf') {
 
-    if (!requireNamespace("rhdf5", quietly=TRUE)) {
-      stop('Package rhdf5 is needed to load HDF5 data.')
-    }
+    # OLD
+    # if (!requireNamespace("rhdf5", quietly=TRUE)) {
+    #   stop('Package rhdf5 is needed to load HDF5 data.')
+    # }
+    #
+    # groups = rhdf5::h5ls(file,recursive=FALSE)$name
+    # if ('ParticleType'%in%substring(groups,1,12)) {
+    #   base = 'ParticleType'
+    # } else if ('PartType'%in%substring(groups,1,8)) {
+    #   base = 'PartType'
+    # } else {
+    #   stop('Failed to find particles groups "PartType#" or "ParticleType#" in the HDF file.')
+    # }
+    #
+    # vectormatrix = function(x) {
+    #   if (length(dim(x))==2 & dim(x)[1]==3) {
+    #     x = t(x)
+    #   } else {
+    #     if (length(x)%%3==0) {
+    #       x = t(array(x,c(3,length(x)/3)))
+    #     } else {
+    #       stop('unknown hdf structure')
+    #     }
+    #   }
+    #   return(x)
+    # }
+    #
+    # dat = list()
+    # if (length(groups)<1) stop('something wrong with HDF5 file')
+    # if ('Config'%in%groups) dat$Config = rhdf5::h5readAttributes(file,'/Config')
+    # if ('Header'%in%groups) dat$Header = rhdf5::h5readAttributes(file,'/Header')
+    # if ('Parameters'%in%groups) dat$Parameters = rhdf5::h5readAttributes(file,'/Parameters')
+    # for (i in seq(0,5)) {
+    #   field.file = sprintf('%s%d',base,i)
+    #   field = sprintf('PartType%d',i)
+    #   if (field%in%groups) {
+    #     if (bit64) {
+    #       raw = rhdf5::h5read(file,field.file,bit64conversion='bit64')
+    #     } else {
+    #       raw = rhdf5::h5read(file,field.file)
+    #     }
+    #     if (!is.null(raw$Coordinates)) raw$Coordinates = vectormatrix(raw$Coordinates)
+    #     if (!is.null(raw$Velocities)) raw$Velocities = vectormatrix(raw$Velocities)
+    #     if (!is.null(raw$Accelerations)) raw$Accelerations = vectormatrix(raw$Accelerations)
+    #     dat[[field]] = raw
+    #   }
+    # }
 
-    groups = rhdf5::h5ls(file,recursive=FALSE)$name
-    if ('ParticleType'%in%substring(groups,1,12)) {
-      base = 'ParticleType'
-    } else if ('PartType'%in%substring(groups,1,8)) {
-      base = 'PartType'
-    } else {
-      stop('Failed to find particles groups "PartType#" or "ParticleType#" in the HDF file.')
-    }
+    dat = cooltools::readhdf5(file, subtree=subtree,  group.attr.as.data=TRUE, empty=empty)
 
-    vectormatrix = function(x) {
-      if (length(dim(x))==2 & dim(x)[1]==3) {
-        x = t(x)
-      } else {
-        if (length(x)%%3==0) {
-          x = t(array(x,c(3,length(x)/3)))
-        } else {
-          stop('unknown hdf structure')
-        }
-      }
-      return(x)
-    }
-
-    dat = list()
-    if (length(groups)<1) stop('something wrong with HDF5 file')
-    if ('Config'%in%groups) dat$Config = rhdf5::h5readAttributes(file,'/Config')
-    if ('Header'%in%groups) dat$Header = rhdf5::h5readAttributes(file,'/Header')
-    if ('Parameters'%in%groups) dat$Parameters = rhdf5::h5readAttributes(file,'/Parameters')
-    for (i in seq(0,5)) {
-      field.file = sprintf('%s%d',base,i)
-      field = sprintf('PartType%d',i)
-      if (field%in%groups) {
-        if (bit64) {
-          raw = rhdf5::h5read(file,field.file,bit64conversion='bit64')
-        } else {
-          raw = rhdf5::h5read(file,field.file)
-        }
-        if (!is.null(raw$Coordinates)) raw$Coordinates = vectormatrix(raw$Coordinates)
-        if (!is.null(raw$Velocities)) raw$Velocities = vectormatrix(raw$Velocities)
-        if (!is.null(raw$Accelerations)) raw$Accelerations = vectormatrix(raw$Accelerations)
-        dat[[field]] = raw
-      }
-    }
-
-    convert_1d_arrays_to_vectors = function(x) {
+    convert_arrays = function(x) {
       if (is.list(x)) {
         # If it's a list, recursively apply to each element
-        lapply(x, convert_1d_arrays_to_vectors)
-      } else if (is.array(x) && length(dim(x)) == 1) {
+        lapply(x, convert_arrays)
+      } else if (is.array(x) && length(dim(x))==1) {
         # If it's a 1D array, convert to vector
         as.vector(x)
+      } else if (is.array(x) && length(dim(x))==2 && dim(x)[1]==3) {
+        # If it's a 2D array of 3-element colum vectors, transpose
+        x = t(x)
       } else {
         # Otherwise, return as is
         x
       }
     }
-    dat = convert_1d_arrays_to_vectors(dat)
+    dat = convert_arrays(dat)
 
   } else {
 
