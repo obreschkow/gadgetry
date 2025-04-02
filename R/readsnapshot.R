@@ -264,9 +264,6 @@ readsnapshot = function(file, type='auto', subtree='*', empty=FALSE) {
       } else if (is.array(x) && length(dim(x))==1) {
         # If it's a 1D array, convert to vector
         as.vector(x)
-      } else if (is.array(x) && length(dim(x))==2 && dim(x)[1]==3) {
-        # If it's a 2D array of 3-element colum vectors, transpose
-        x = t(x)
       } else {
         # Otherwise, return as is
         x
