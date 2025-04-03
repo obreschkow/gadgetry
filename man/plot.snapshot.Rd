@@ -46,18 +46,18 @@
 )
 }
 \arguments{
-\item{x}{object of class 'snapshot'. It must contain at least one sublist PartType# (with #=0,1,...). Each sublist PartType# represents one type of particle (e.g. gas, stars, dark matter) and must contain at least the particles coordinates in an N-by-3 matrix \code{Coordinates}. Other optional elements of PartType# are:\cr
-\code{Masses} = N-vector with particle masses, used as luminosity weights
-\code{Density} or \code{Densities} = N-vector with local densities. These are only used to determine the smoothing if kde=4 and if Masses are provided.
-\code{col} = color used to display this particle type. This can be a single color or a vector of colors. If a single color is provided, a range of brightness of that color is produced automatically .\cr
-\code{value} = optional N-vector of values, one for each particle, which define the position on the color scale. If not given, particles are colored according to their projected density.\cr
-\code{valrange} = optional 2-vector specifying the values corresponding to the limits of the color scale. Only used if the N-vector \code{value} is given.\cr
-\code{density.scaling} = logical flag (default TRUE), specifying whether the brightness is scaled with the particle density if \code{value} is given.\cr
-\code{lum} = overall scaling factor for the color scale.\cr
-\code{gamma} = gamma parameter setting the non-linear conversion between density and brightness/color. The larger the value, the higher the dynamic range.\cr
-\code{kde} = integer, setting the density estimation method. 0: Simple gridding, 1: Gaussian blur, 2: Fast approximate kernel density estimation relying on 2D densities, 3: More accurate 3D-kernel-density estimation, 4: Adaptive smoothing based on densities of particles (requires Density and Masses to be provided for the particle type, otherwise the 3rd algorithm will be used as default).\cr
-\code{smoothing} = linear smoothing factor (default 1) to adjust the automatically determined size of the (adaptive or fixed) smoothing kernels.\cr
-\code{ref.density} = optional number specifying a fixed reference density (number of particles per area, in units of 1/(length unit)^2) used for luminosity normalization; fixing this value allows to suppress brightness fluctuations between snapshots (e.g. in movies).\cr\cr}
+\item{x}{object of class 'snapshot'. It must contain at least one sublist PartType# (with #=0,1,...). Each sublist PartType# represents one type of particles (e.g. gas, dark matter, stars) and must contain at least the particles coordinates in an N-by-3 matrix \code{Coordinates}. Other optional elements of PartType# are:\cr\cr
+\code{Masses} = N-vector with particle masses, used as luminosity weights\cr\cr
+\code{Density} or \code{Densities} = N-vector with local densities. These are only used to determine the smoothing if kde=4 and if Masses are provided.\cr\cr
+\code{col} = color used to display this particle type. This can be a single color or a vector of colors. If a single color is provided, a range of brightness of that color is produced automatically.\cr\cr
+\code{value} = optional N-vector of values, one for each particle, which define the position on the color scale. If not given, particles are colored according to their projected density.\cr\cr
+\code{valrange} = optional 2-vector specifying the values corresponding to the limits of the color scale. Only used if the N-vector \code{value} is given.\cr\cr
+\code{density.scaling} = logical flag (default TRUE), specifying whether the brightness is scaled with the particle density if \code{value} is given.\cr\cr
+\code{lum} = overall scaling factor for the color scale.\cr\cr
+\code{gamma} = gamma parameter setting the non-linear conversion between density and brightness/color. The larger the value, the higher the dynamic range.\cr\cr
+\code{kde} = integer, setting the density estimation method. 0: Simple gridding, 1: Gaussian blur, 2: Fast approximate kernel density estimation relying on 2D densities, 3: More accurate 3D-kernel-density estimation, 4: Adaptive smoothing based on densities of particles (requires Density and Masses to be provided for the particle type, otherwise the 3rd algorithm will be used as default).\cr\cr
+\code{smoothing} = linear smoothing factor (default 1) to adjust the automatically determined size of the (adaptive or fixed) smoothing kernels.\cr\cr
+\code{ref.density} = optional number specifying a fixed reference density (number of particles per area, in units of 1/(length unit)^2) used for luminosity normalization; fixing this value allows to suppress brightness fluctuations between snapshots (e.g. in movies).\cr}
 
 \item{center}{optional 3-vector specifying the coordinate at the center of the plot. The default is the geometric center (= center of mass, if all particle masses are equal).}
 
