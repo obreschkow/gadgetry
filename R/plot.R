@@ -296,7 +296,7 @@ plot.snapshot = function(x, center=NULL, rotation=1, rot.center=NULL, width=NULL
       if (sample.fraction<1) {
         nsub = max(1,round(dim(x)[1]*sample.fraction)) # number of particles to select
         sel = sample(dim(x)[1],nsub)
-        x = x[sel,]
+        x = x[sel,,drop = FALSE]
         if (snapshot[[field]]$color.by.property) snapshot[[field]]$value=snapshot[[field]]$value[sel]
         if (!is.null(snapshot[[field]]$Density)) snapshot[[field]]$Density=snapshot[[field]]$Density[sel]
         if (!is.null(snapshot[[field]]$Masses)) snapshot[[field]]$Masses=snapshot[[field]]$Masses[sel]
@@ -320,7 +320,7 @@ plot.snapshot = function(x, center=NULL, rotation=1, rot.center=NULL, width=NULL
       if (!is.null(snapshot[[field]]$Density)) snapshot[[field]]$Density=snapshot[[field]]$Density[sel]
       if (!is.null(snapshot[[field]]$Masses)) snapshot[[field]]$Masses=snapshot[[field]]$Masses[sel]
       stretch = width/2/tan(fov/180*pi/2)
-      x = x[sel,]
+      x = x[sel,, drop = FALSE]
       distance = vectornorm(x)
       x = x[,1:2]/x[,3]*stretch
     }
@@ -348,7 +348,7 @@ plot.snapshot = function(x, center=NULL, rotation=1, rot.center=NULL, width=NULL
           sel = which(distance<=depth)
         }
       }
-      x = x[sel,]
+      x = x[sel,, drop = FALSE]
       if (snapshot[[field]]$color.by.property) snapshot[[field]]$value=snapshot[[field]]$value[sel]
       if (!is.null(snapshot[[field]]$Density)) snapshot[[field]]$Density=snapshot[[field]]$Density[sel]
       if (!is.null(snapshot[[field]]$Masses)) snapshot[[field]]$Masses=snapshot[[field]]$Masses[sel]
