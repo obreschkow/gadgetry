@@ -150,9 +150,9 @@ sn$PartType1$smoothing = 2
 
 # rendering parameters of stars
 sn$PartType2$col = '#ffff44'
-sn$PartType2$smoothing = 0.5
-sn$PartType2$lum = 0.3
-sn$PartType2$gamma = 0.6
+sn$PartType2$smoothing = 0.7
+sn$PartType2$lum = 0.7
+sn$PartType2$gamma = 0.8
 
 # plot snapshot
 out = plot(sn, length.unit='kpc', width=500, kde=3, rotation=c(0,0,0.5), arrows=FALSE)
