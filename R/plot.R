@@ -391,6 +391,14 @@ plot.snapshot = function(x, center=NULL, rotation=1, rot.center=NULL, width=NULL
 
   }
 
+  # deterime mean density across all types
+  mass = 0
+  for (type in types) {
+    field = sprintf('PartType%d',type)
+    mass = mass+out[[field]]$n.eff
+  }
+  mean.density = mass/dx^2/nx/ny/length(types)
+
   # turn density and value matrices into RGB layers
   nlayers = length(out)
   img4 = array(dim=c(nx,ny,3,nlayers))
@@ -403,11 +411,10 @@ plot.snapshot = function(x, center=NULL, rotation=1, rot.center=NULL, width=NULL
 
     # convert density to brightness
     filling.factor = sum(out[[field]]$density>mean(out[[field]]$density)*0.1)/npixels^2
-    min.density.mean = 1/(nx*ny*dx^2) # mean density for one particle
     if (is.null(snapshot[[field]]$ref.density)) {
-      linear.scaling = 1/max(100*min.density.mean,mean(out[[field]]$density))*filling.factor
+      linear.scaling = filling.factor/mean.density
     } else {
-      linear.scaling = 1/max(min.density.mean,snapshot[[field]]$ref.density)
+      linear.scaling = 1/snapshot[[field]]$ref.density
     }
     brightness = 0.3*(snapshot[[field]]$lum*linear.scaling*out[[field]]$density)^snapshot[[field]]$gamma
 
