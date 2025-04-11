@@ -140,7 +140,6 @@ Returns a structured list of parameters and arrays useful to analyse and reprodu
 Produces a raster image visualizing particle positions in 3D N-body/SPH data.
 }
 \examples{
-\dontrun{
 ## EXAMPLE 1: COLIBRE GALAXY COLOURED BY GAS IONIZATION FRACTION
 # load a test galaxy from the COLIBRE simulation (L25m5)
 filename = system.file('galaxy2.hdf5', package='gadgetry')
@@ -199,7 +198,6 @@ out = plot(sn, length.unit='kpc', width=500, kde=3, rotation=c(0,0,0.5), arrows=
 col = cooltools::lightness(allpart(out, 'col'), 0.65)
 legend(out$header$xlim[1],out$header$ylim[2],c('Dark matter','Stars'),
        col=col,pch=16,text.col=col,bty='n')
-}
 
 }
 \seealso{

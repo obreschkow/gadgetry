@@ -64,7 +64,6 @@
 #' @author Danail Obreschkow
 #'
 #' @examples
-#' \dontrun{
 #' ## EXAMPLE 1: COLIBRE GALAXY COLOURED BY GAS IONIZATION FRACTION
 #' # load a test galaxy from the COLIBRE simulation (L25m5)
 #' filename = system.file('galaxy2.hdf5', package='gadgetry')
@@ -123,7 +122,6 @@
 #' col = cooltools::lightness(allpart(out, 'col'), 0.65)
 #' legend(out$header$xlim[1],out$header$ylim[2],c('Dark matter','Stars'),
 #'        col=col,pch=16,text.col=col,bty='n')
-#' }
 #'
 #' @method plot snapshot
 #' @export
