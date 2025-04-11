@@ -18,7 +18,7 @@ None.
 Summarizes the content of 'snapshot' class objects.
 }
 \examples{
-filename = system.file('test_snapshot.hdf5', package='gadgetry')
+filename = system.file('galaxy1.hdf5', package='gadgetry')
 sn = readsnapshot(filename)
 summary(sn)
 

@@ -39,7 +39,7 @@ None
 Produces a 2-by-2 panel figure, where each panel is made of an \code{\link{plot.snapshot}} image in a different rotation.
 }
 \examples{
-filename = system.file('test_snapshot.hdf5', package='gadgetry')
+filename = system.file('galaxy1.hdf5', package='gadgetry')
 sn = readsnapshot(filename)
 sn$PartType1$smoothing = 2
 sn$PartType2$smoothing = 1

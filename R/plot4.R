@@ -21,7 +21,7 @@
 #' @seealso \code{\link{plot.snapshot}}
 #'
 #' @examples
-#' filename = system.file('test_snapshot.hdf5', package='gadgetry')
+#' filename = system.file('galaxy1.hdf5', package='gadgetry')
 #' sn = readsnapshot(filename)
 #' sn$PartType1$smoothing = 2
 #' sn$PartType2$smoothing = 1

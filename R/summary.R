@@ -14,7 +14,7 @@
 #' @author Danail Obreschkow
 #'
 #' @examples
-#' filename = system.file('test_snapshot.hdf5', package='gadgetry')
+#' filename = system.file('galaxy1.hdf5', package='gadgetry')
 #' sn = readsnapshot(filename)
 #' summary(sn)
 #'

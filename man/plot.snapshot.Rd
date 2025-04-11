@@ -141,7 +141,7 @@ Produces a raster image visualizing particle positions in 3D N-body/SPH data.
 }
 \examples{
 # load snapshot
-filename = system.file('test_snapshot.hdf5', package='gadgetry')
+filename = system.file('galaxy1.hdf5', package='gadgetry')
 sn = readsnapshot(filename)
 
 # rendering parameters of dark matter
