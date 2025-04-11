@@ -64,7 +64,45 @@
 #' @author Danail Obreschkow
 #'
 #' @examples
-#' # load snapshot
+#' \dontrun{
+#' ## EXAMPLE 1: COLIBRE GALAXY COLOURED BY GAS IONIZATION FRACTION
+#' # load a test galaxy from the COLIBRE simulation (L25m5)
+#' filename = system.file('galaxy2.hdf5', package='gadgetry')
+#' sn = readsnapshot(filename)
+#'
+#' # set gas rendering parameters, such that it is colored by the
+#' # hydrogen ionization fraction (HII/H)
+#' sn$PartType0$gamma = .8
+#' sn$PartType0$value = sn$PartType0$SpeciesFractions[,3] # hydrogen ionization fraction
+#' sn$PartType0$col = colorRampPalette(c('#1117ff','#ff0533'))(256)
+#' sn$PartType0$smoothing = .7
+#'
+#' # set star rendering parameters
+#' sn$PartType4$col = 'white'
+#' sn$PartType4$lum = 0.7
+#' sn$PartType4$gamma = .8
+#'
+#' # generate plot
+#' par(mar=c(0,0,0,0))
+#' plot(sn, center=0, width=0.07, rotation=c(0,1,0.3), npixels=500, arrows=FALSE)
+#'
+#' ## EXAMPLE 2: COLIBRE GALAXY COLOURED BY GAS TEMPERATURE
+#' # load a test galaxy from the COLIBRE simulation (L25m5)
+#' filename = system.file('galaxy2.hdf5', package='gadgetry')
+#' sn = readsnapshot(filename)
+#'
+#' # set gas rendering parameters, such that it is colored by temperature
+#' sn$PartType0$gamma = .8
+#' sn$PartType0$value = log10(sn$PartType0$Temperatures)
+#' sn$PartType0$valrange = c(2.5,4.2)
+#' sn$PartType0$col = rev(rainbow(100,end=2/3))
+#'
+#' # generate plot, showing only the gas
+#' par(mar=c(0,0,0,0))
+#' plot(sn, center=0, width=0.07, rotation=c(0,1.6,0.55), types=0, npixels=500, arrows=FALSE)
+#'
+#' ## EXAMPLE 3: LOW-RES TEST GALAXY WITH DARK MATTER
+#' # load galaxy
 #' filename = system.file('galaxy1.hdf5', package='gadgetry')
 #' sn = readsnapshot(filename)
 #'
@@ -85,11 +123,12 @@
 #' col = cooltools::lightness(allpart(out, 'col'), 0.65)
 #' legend(out$header$xlim[1],out$header$ylim[2],c('Dark matter','Stars'),
 #'        col=col,pch=16,text.col=col,bty='n')
+#' }
 #'
 #' @method plot snapshot
 #' @export
 plot.snapshot = function(x, center=NULL, rotation=1, rot.center=NULL, width=NULL, fov=NULL, depth=NULL, taper=FALSE,
-                         aspect=1, npixels=300, kde=3, smoothing=1,
+                         aspect=1, npixels=300, kde=4, smoothing=1,
                          types=NULL, sample.fraction=1,
                          lum=1, gamma=1, shadows=1, hdcolors=TRUE,
                          screen=TRUE, pngfile=NULL, pdffile=NULL,
