@@ -16,13 +16,15 @@ allpart = function(snapshot, field = 'Coordinates', species = seq(0,5)) {
 
   # determine required space
   n.valid.species = 0
+  d = 0
+  if (field%in%c('Coordinates','Velocities')) d = 2
   for (i in species) {
     group = sprintf('PartType%d',i)
     if (!is.null(snapshot[[group]])) {
       if (!is.null(snapshot[[group]][[field]])) {
         n.valid.species = n.valid.species+1
         dm = dim(snapshot[[group]][[field]])
-        d = length(dm)
+        d = max(d,length(dm))
       } else {
         stop(sprintf('Field %s does not exist for species %d.\n',field,i))
       }
@@ -31,11 +33,7 @@ allpart = function(snapshot, field = 'Coordinates', species = seq(0,5)) {
   if (n.valid.species==0) stop(sprintf('Field %s not found in considered species.\n',field))
 
   # check data size
-  if (d==2) {
-    if (dm[2]!=3) stop('unknown data format')
-  } else if (d!=0 & d!=1) {
-    stop('unknown data format')
-  }
+  if (d!=0 & d!=1 & d!=2) stop('unknown data format')
 
   # write data into output array
   x = NULL

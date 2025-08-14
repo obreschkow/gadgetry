@@ -123,8 +123,9 @@
 #' legend(out$header$xlim[1],out$header$ylim[2],c('Dark matter','Stars'),
 #'        col=col,pch=16,text.col=col,bty='n')
 #'
-#' @method plot snapshot
 #' @export
+#' @export plot.snapshot
+#' @method plot snapshot
 plot.snapshot = function(x, center=NULL, rotation=1, rot.center=NULL, width=NULL, fov=NULL, depth=NULL, taper=FALSE,
                          aspect=1, npixels=300, kde=4, smoothing=1,
                          types=NULL, sample.fraction=1,
@@ -243,6 +244,7 @@ plot.snapshot = function(x, center=NULL, rotation=1, rot.center=NULL, width=NULL
   } else {
     if (length(center)==1) center=rep(center,3)
     if (length(center)==2) center=c(center,0)
+    center = as.vector(center)
   }
 
   # determine plotting limits
